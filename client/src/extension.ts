@@ -59,13 +59,13 @@ export function activate(context: ExtensionContext) {
   );
 
   context.subscriptions.push(
-    commands.registerCommand("lsp-sample.uroborosql-format", async () => {
+    commands.registerCommand("uroborosql-fmt.uroborosql-format", async () => {
       const uri = window.activeTextEditor.document.uri;
       const version = window.activeTextEditor.document.version;
       const selections = window.activeTextEditor.selections;
 
       await client.sendRequest(ExecuteCommandRequest.type, {
-        command: "lsp-sample.executeFormat",
+        command: "uroborosql-fmt.executeFormat",
         arguments: [uri, version, selections],
       });
     })

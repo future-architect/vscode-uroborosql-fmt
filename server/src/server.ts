@@ -3,23 +3,20 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 import {
-	createConnection,
-	TextDocuments,
-	ProposedFeatures,
-	InitializeParams,
-	DidChangeConfigurationNotification,
-	TextDocumentSyncKind,
-	InitializeResult,
-	CodeAction,
-	TextEdit,
-	TextDocumentEdit,
-	CodeActionKind,
-	Position,
-	Range,
-} from 'vscode-languageserver/node';
+  createConnection,
+  TextDocuments,
+  ProposedFeatures,
+  InitializeParams,
+  DidChangeConfigurationNotification,
+  TextDocumentSyncKind,
+  InitializeResult,
+  TextEdit,
+  TextDocumentEdit,
+  Position,
+  Range,
+} from "vscode-languageserver/node";
 
-import { TextDocument } from 'vscode-languageserver-textdocument';
-
+import { TextDocument } from "vscode-languageserver-textdocument";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { runfmt } = require("../../uroborosql-fmt-napi/index");
@@ -36,54 +33,56 @@ let hasWorkspaceFolderCapability = false;
 let hasDiagnosticRelatedInformationCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
-	const capabilities = params.capabilities;
+  const capabilities = params.capabilities;
 
-	// Does the client support the `workspace/configuration` request?
-	// If not, we fall back using global settings.
-	hasConfigurationCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.configuration
-	);
-	hasWorkspaceFolderCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.workspaceFolders
-	);
-	hasDiagnosticRelatedInformationCapability = !!(
-		capabilities.textDocument &&
-		capabilities.textDocument.publishDiagnostics &&
-		capabilities.textDocument.publishDiagnostics.relatedInformation
-	);
+  // Does the client support the `workspace/configuration` request?
+  // If not, we fall back using global settings.
+  hasConfigurationCapability = !!(
+    capabilities.workspace && !!capabilities.workspace.configuration
+  );
+  hasWorkspaceFolderCapability = !!(
+    capabilities.workspace && !!capabilities.workspace.workspaceFolders
+  );
+  hasDiagnosticRelatedInformationCapability = !!(
+    capabilities.textDocument &&
+    capabilities.textDocument.publishDiagnostics &&
+    capabilities.textDocument.publishDiagnostics.relatedInformation
+  );
 
-	const result: InitializeResult = {
-		capabilities: {
-			textDocumentSync: TextDocumentSyncKind.Incremental,
-			
-		},
-	};
-	if (hasWorkspaceFolderCapability) {
-		result.capabilities.workspace = {
-			workspaceFolders: {
-				supported: true,
-			},
-		};
-	}
-	return result;
+  const result: InitializeResult = {
+    capabilities: {
+      textDocumentSync: TextDocumentSyncKind.Incremental,
+    },
+  };
+  if (hasWorkspaceFolderCapability) {
+    result.capabilities.workspace = {
+      workspaceFolders: {
+        supported: true,
+      },
+    };
+  }
+  return result;
 });
 
 connection.onInitialized(() => {
-	if (hasConfigurationCapability) {
-		// Register for all configuration changes.
-		connection.client.register(DidChangeConfigurationNotification.type, undefined);
-	}
-	if (hasWorkspaceFolderCapability) {
-		connection.workspace.onDidChangeWorkspaceFolders((_event) => {
-			connection.console.log('Workspace folder change event received.');
-		});
-	}
+  if (hasConfigurationCapability) {
+    // Register for all configuration changes.
+    connection.client.register(
+      DidChangeConfigurationNotification.type,
+      undefined
+    );
+  }
+  if (hasWorkspaceFolderCapability) {
+    connection.workspace.onDidChangeWorkspaceFolders((_event) => {
+      connection.console.log("Workspace folder change event received.");
+    });
+  }
 });
 
 // コマンド実行時に行う処理
 connection.onExecuteCommand((params) => {
   if (
-    params.command !== "lsp-sample.executeFormat" ||
+    params.command !== "uroborosql-fmt.executeFormat" ||
     params.arguments == null
   ) {
     return;
@@ -111,15 +110,14 @@ connection.onExecuteCommand((params) => {
       continue;
     }
 
-	// フォーマット
-	changes.push(TextEdit.replace(selection, runfmt(text)));
+    // フォーマット
+    changes.push(TextEdit.replace(selection, runfmt(text)));
   }
 
   if (changes.length === 0) {
     // テキスト全体を取得
     const text = textDocument.getText();
-	// フォーマット
-
+    // フォーマット
     changes.push(
       TextEdit.replace(
         Range.create(
@@ -141,7 +139,6 @@ connection.onExecuteCommand((params) => {
     ],
   });
 });
-
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
