@@ -2,3 +2,4 @@ out
 node_modules
 client/server
 .vscode-test
+uroborosql-fmt-1.0.0.vsix

@@ -6,9 +6,10 @@
   "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Microsoft/vscode-extension-samples"
+    "url": "https://gitlab.nasa.future.co.jp/oss-incubate/rust-sql-formatter/uroborosql-fmt-extension"
   },
   "publisher": "k-kawabt",
+  "icon": "uroborosql-fmt-icon.png",
   "categories": [
     "Formatters"
   ],
@@ -17,7 +18,8 @@
     "vscode": "^1.63.0"
   },
   "activationEvents": [
-    "onLanguage:sql"
+    "onLanguage:sql",
+    "onCommand:uroborosql-fmt.uroborosql-format"
   ],
   "main": "./client/out/extension",
   "contributes": {

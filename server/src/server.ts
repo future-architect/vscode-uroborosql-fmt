@@ -18,8 +18,7 @@ import {
 
 import { TextDocument } from "vscode-languageserver-textdocument";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { runfmt } = require("../../uroborosql-fmt-napi/index");
+import { runfmt } from "uroborosql-fmt";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
