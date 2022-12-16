@@ -41,9 +41,13 @@ export function activate(context: ExtensionContext) {
   const clientOptions: LanguageClientOptions = {
     // Register the server for plain text documents
     documentSelector: [
-      { scheme: "file", language: "sql" },
-      { scheme: "untitled", language: "sql" },
+      { pattern: "**", scheme: "file" },
+      { pattern: "**", scheme: "untitled" },
     ],
+    // [
+    //   { scheme: "file", language: "sql" },
+    //   { scheme: "untitled", language: "sql" },
+    // ],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
       fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
