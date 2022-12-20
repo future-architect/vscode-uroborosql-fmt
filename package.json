@@ -18,8 +18,7 @@
     "vscode": "^1.63.0"
   },
   "activationEvents": [
-    "onLanguage:sql",
-    "onCommand:uroborosql-fmt.uroborosql-format"
+    "*"
   ],
   "main": "./client/out/extension",
   "contributes": {

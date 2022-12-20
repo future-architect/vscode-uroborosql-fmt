@@ -109,13 +109,31 @@ connection.onExecuteCommand((params) => {
       continue;
     }
 
+    let formatted_text: string;
+
+    try {
+      formatted_text = runfmt(text);
+    } catch (e) {
+      console.error(e);
+      return;
+    }
+
     // フォーマット
-    changes.push(TextEdit.replace(selection, runfmt(text)));
+    changes.push(TextEdit.replace(selection, formatted_text));
   }
 
   if (changes.length === 0) {
     // テキスト全体を取得
     const text = textDocument.getText();
+
+    let formatted_text: string;
+    try {
+      formatted_text = runfmt(text);
+    } catch (e) {
+      console.error(e);
+      return;
+    }
+
     // フォーマット
     changes.push(
       TextEdit.replace(
@@ -123,7 +141,7 @@ connection.onExecuteCommand((params) => {
           Position.create(0, 0),
           textDocument.positionAt(text.length)
         ),
-        runfmt(text)
+        formatted_text
       )
     );
   }
