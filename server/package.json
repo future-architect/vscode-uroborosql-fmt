@@ -9,6 +9,7 @@
   },
   "repository": {},
   "dependencies": {
+    "fs": "^0.0.1-security",
     "uroborosql-fmt-napi": "file:uroborosql-fmt-napi-0.0.0.tgz",
     "vscode-languageserver": "^7.0.0",
     "vscode-languageserver-textdocument": "^1.0.4"

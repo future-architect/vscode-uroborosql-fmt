@@ -19,6 +19,7 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 
 import { runfmt } from "uroborosql-fmt-napi";
+import * as fs from "fs";
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -99,6 +100,16 @@ connection.onExecuteCommand((params) => {
   }
 
   const selections = params.arguments[2];
+  const root_path = params.arguments[3];
+
+  let config_path: string | null = null;
+  if (root_path != null) {
+    config_path = root_path.uri.path + "\\uroborosqlfmt-config.json";
+    if (!fs.existsSync(config_path)) {
+      config_path = null;
+    }
+  }
+
   const changes: TextEdit[] = [];
 
   // 全ての選択範囲に対して実行
@@ -112,7 +123,7 @@ connection.onExecuteCommand((params) => {
     let formatted_text: string;
 
     try {
-      formatted_text = runfmt(text);
+      formatted_text = runfmt(text, config_path);
     } catch (e) {
       console.error(e);
       return;
@@ -128,7 +139,7 @@ connection.onExecuteCommand((params) => {
 
     let formatted_text: string;
     try {
-      formatted_text = runfmt(text);
+      formatted_text = runfmt(text, config_path);
     } catch (e) {
       console.error(e);
       return;
