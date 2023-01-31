@@ -44,10 +44,6 @@ export function activate(context: ExtensionContext) {
       { pattern: "**", scheme: "file" },
       { pattern: "**", scheme: "untitled" },
     ],
-    // [
-    //   { scheme: "file", language: "sql" },
-    //   { scheme: "untitled", language: "sql" },
-    // ],
     synchronize: {
       // Notify the server about file changes to '.clientrc files contained in the workspace
       fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
@@ -56,8 +52,8 @@ export function activate(context: ExtensionContext) {
 
   // Create the language client and start the client.
   client = new LanguageClient(
-    "languageServerExample",
-    "Language Server Example",
+    "Uroborosql-fmt",
+    "Uroborosql-fmt",
     serverOptions,
     clientOptions
   );
@@ -67,10 +63,11 @@ export function activate(context: ExtensionContext) {
       const uri = window.activeTextEditor.document.uri;
       const version = window.activeTextEditor.document.version;
       const selections = window.activeTextEditor.selections;
+      const root_path = workspace.getWorkspaceFolder(uri);
 
       await client.sendRequest(ExecuteCommandRequest.type, {
         command: "uroborosql-fmt.executeFormat",
-        arguments: [uri, version, selections],
+        arguments: [uri, version, selections, root_path],
       });
     })
   );
