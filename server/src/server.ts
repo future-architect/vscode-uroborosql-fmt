@@ -16,11 +16,13 @@ import {
   Range,
 } from "vscode-languageserver/node";
 
+
 import { TextDocument } from "vscode-languageserver-textdocument";
 
 import { runfmt } from "uroborosql-fmt-napi";
 import * as fs from "fs";
 
+import { performance } from 'perf_hooks';
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -81,6 +83,9 @@ connection.onInitialized(() => {
 
 // コマンド実行時に行う処理
 connection.onExecuteCommand((params) => {
+  //タイマースタート
+  const startTime = performance.now();
+
   if (
     params.command !== "uroborosql-fmt.executeFormat" ||
     params.arguments == null
@@ -123,6 +128,7 @@ connection.onExecuteCommand((params) => {
     let formatted_text: string;
 
     try {
+      
       formatted_text = runfmt(text, config_path);
     } catch (e) {
       console.error(e);
@@ -166,6 +172,11 @@ connection.onExecuteCommand((params) => {
       ),
     ],
   });
+
+  //タイマーストップ
+  const endTime = performance.now();
+
+  console.log("format complete: " + (endTime - startTime) + "ms"); // 何ミリ秒かかったかを表示する
 });
 
 // Make the text document manager listen on the connection
