@@ -113,7 +113,7 @@ connection.onExecuteCommand((params) => {
 
   const changes: TextEdit[] = [];
 
-  const startTime = performance.now();
+
   // 全ての選択範囲に対して実行
   for (const selection of selections) {
     // テキストを取得
@@ -140,12 +140,17 @@ connection.onExecuteCommand((params) => {
     const text = textDocument.getText();
 
     let formatted_text: string;
+    const startTime = performance.now();
     try {
       formatted_text = runfmt(text, config_path);
     } catch (e) {
       console.error(e);
       return;
     }
+    //タイマーストップ
+    const endTime = performance.now();
+    console.log("format complete: " + (endTime - startTime) + "ms"); // 何ミリ秒かかったかを表示する
+
 
     // フォーマット
     changes.push(
@@ -158,9 +163,6 @@ connection.onExecuteCommand((params) => {
       )
     );
   }
-  //タイマーストップ
-  const endTime = performance.now();
-  console.log("format complete: " + (endTime - startTime) + "ms"); // 何ミリ秒かかったかを表示する
 
   // 変更を適用
   connection.workspace.applyEdit({
