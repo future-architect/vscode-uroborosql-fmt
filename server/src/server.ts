@@ -22,6 +22,7 @@ import { runfmt } from "uroborosql-fmt-napi";
 import * as fs from "fs";
 
 import { performance } from "perf_hooks";
+import path = require('path');
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -105,7 +106,7 @@ connection.onExecuteCommand((params) => {
 
   let config_path: string | null = null;
   if (root_path != null) {
-    config_path = root_path.uri.path + "\\uroborosqlfmt-config.json";
+    config_path = path.join(root_path.uri.fsPath, "uroborosqlfmt-config.json");
     if (!fs.existsSync(config_path)) {
       config_path = null;
     }
