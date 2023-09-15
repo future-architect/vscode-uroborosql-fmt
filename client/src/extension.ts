@@ -63,11 +63,10 @@ export function activate(context: ExtensionContext) {
       const uri = window.activeTextEditor.document.uri;
       const version = window.activeTextEditor.document.version;
       const selections = window.activeTextEditor.selections;
-      const root_path = workspace.getWorkspaceFolder(uri);
 
       await client.sendRequest(ExecuteCommandRequest.type, {
         command: "uroborosql-fmt.executeFormat",
-        arguments: [uri, version, selections, root_path],
+        arguments: [uri, version, selections],
       });
     })
   );

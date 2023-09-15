@@ -22,7 +22,8 @@ import { runfmt } from "uroborosql-fmt-napi";
 import * as fs from "fs";
 
 import { performance } from "perf_hooks";
-import path = require('path');
+import path = require("path");
+import { URI } from 'vscode-uri';
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -81,52 +82,102 @@ connection.onInitialized(() => {
   }
 });
 
-// コマンド実行時に行う処理
-connection.onExecuteCommand((params) => {
-  if (
-    params.command !== "uroborosql-fmt.executeFormat" ||
-    params.arguments == null
-  ) {
-    return;
+type ConfigurationSettings = {
+  configurationFilePath: string;
+};
+
+function getSettings(resource: string): Thenable<ConfigurationSettings> {
+  return connection.workspace.getConfiguration({
+    scopeUri: resource,
+    section: "uroborosql-fmt",
+  });
+}
+
+async function getWorkspaceFolder(document: TextDocument) : Promise<string | undefined>{
+  const {scheme, fsPath}  = URI.parse(document.uri);
+
+  if (scheme === 'untitled') {
+    const uri =  (await connection.workspace.getWorkspaceFolders())?.[0]?.uri;
+    return uri ? URI.parse(uri).fsPath : undefined;
   }
-  const uri = params.arguments[0].external;
-  // uriからドキュメントを取得
-  const textDocument = documents.get(uri);
-  if (textDocument == null) {
-    return;
+  
+  if (fsPath) {
+    const workspaceFolders = await connection.workspace.getWorkspaceFolders();
+
+    if (workspaceFolders) {
+      const wsFolder = workspaceFolders.find((wsFolder) => {
+        const {scheme: wsScheme, fsPath: wsFsPath} = URI.parse(wsFolder.uri);
+        const relative = path.relative(wsFsPath, fsPath);
+        return scheme == wsScheme && relative && !relative.startsWith("..") && !path.isAbsolute(relative);
+      });
+
+      return wsFolder ? wsFolder.uri : undefined;
+    }
   }
-  // バージョン不一致の場合はアーリーリターン
-  const version = params.arguments[1];
-  if (textDocument.version !== version) {
+  return undefined;
+}
+
+async function formatText(
+  uri: string,
+  textDocument: TextDocument,
+  version: number,
+  selections: Range[]
+): Promise<void> {
+  const settings: ConfigurationSettings = await getSettings(uri);
+  
+  const workspaceFolder: string | undefined = await getWorkspaceFolder(textDocument);
+  if (!workspaceFolder) {
+    connection.window.showErrorMessage("The workspace folder is undefined");
     return;
   }
 
-  const selections = params.arguments[2];
-  const root_path = params.arguments[3];
+  // version check
+  if (version !== textDocument.version) {
+    return;
+  }
 
-  let config_path: string | null = null;
-  if (root_path != null) {
-    config_path = path.join(root_path.uri.fsPath, "uroborosqlfmt-config.json");
-    if (!fs.existsSync(config_path)) {
-      config_path = null;
+  // remove scheme
+  const workspaceFolderPath = URI.parse(workspaceFolder).fsPath;
+  const defaultConfigPath = path.join(workspaceFolderPath, ".uroborosqlfmtrc.json");
+
+  let configPath: string | null = null;
+  if (!settings.configurationFilePath) {
+    // The path of configuration file is not specified.
+    // If defaultConfigPath doesn't exist, fomatters default config will be used.
+    if (fs.existsSync(defaultConfigPath)) {
+      configPath = defaultConfigPath;
+    }
+    // else { configPath = null; }
+  } else {
+    let specifiedConfigPath = settings.configurationFilePath;
+    if (!path.isAbsolute(specifiedConfigPath)) {
+      specifiedConfigPath = path.join(workspaceFolderPath, specifiedConfigPath);
+    }
+    
+    if (fs.existsSync(specifiedConfigPath)) {
+      configPath = specifiedConfigPath;
+    } else {
+      connection.window.showErrorMessage(
+        `${specifiedConfigPath} doesn't exist.`
+      );
+      return;
     }
   }
 
   const changes: TextEdit[] = [];
 
-
   // 全ての選択範囲に対して実行
   for (const selection of selections) {
     // テキストを取得
     const text = textDocument.getText(selection);
-    if (text.length === 0) {
+    if (!text.length) {
       continue;
     }
 
     let formatted_text: string;
 
     try {
-      formatted_text = runfmt(text, config_path);
+      formatted_text = runfmt(text, configPath);
     } catch (e) {
       console.error(e);
       return;
@@ -136,22 +187,24 @@ connection.onExecuteCommand((params) => {
     changes.push(TextEdit.replace(selection, formatted_text));
   }
 
-  if (changes.length === 0) {
+  if (!changes.length) {
     // テキスト全体を取得
     const text = textDocument.getText();
 
     let formatted_text: string;
     const startTime = performance.now();
     try {
-      formatted_text = runfmt(text, config_path);
+      formatted_text = runfmt(text, configPath);
     } catch (e) {
       console.error(e);
+      connection.window.showErrorMessage(
+        `Formatter error. src:${textDocument.uri}, config:${configPath} msg: ${e}`
+      );
       return;
     }
     //タイマーストップ
     const endTime = performance.now();
     console.log("format complete: " + (endTime - startTime) + "ms"); // 何ミリ秒かかったかを表示する
-
 
     // フォーマット
     changes.push(
@@ -174,6 +227,27 @@ connection.onExecuteCommand((params) => {
       ),
     ],
   });
+}
+
+// コマンド実行時に行う処理
+connection.onExecuteCommand((params) => {
+  if (
+    params.command !== "uroborosql-fmt.executeFormat" ||
+    params.arguments == null
+  ) {
+    return;
+  }
+  const uri = params.arguments[0].external;
+  // uriからドキュメントを取得
+  const textDocument = documents.get(uri);
+  if (textDocument == null) {
+    return;
+  }
+
+  const version = params.arguments[1];
+  const selections = params.arguments[2];
+
+  formatText(uri, textDocument, version, selections);
 });
 
 // Make the text document manager listen on the connection
