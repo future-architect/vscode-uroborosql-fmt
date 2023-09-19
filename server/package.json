@@ -3,6 +3,7 @@
   "description": "uroborosql-fmt server",
   "version": "1.0.0",
   "author": "Future Corporation",
+  "publisher": "Future",
   "license": "BUSL-1.1",
   "engines": {
     "node": "*"
