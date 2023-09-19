@@ -25,10 +25,10 @@ The main features:
 - **Leading comma style**, not a trailing comma style.
 
  ```sql
-  SELECT
-   A AS A
-  , B AS B
-  , C AS C
+	SELECT
+		A	AS	A
+	,	B	AS	B
+	,	C	AS	C
  ```
 
 ## Install
