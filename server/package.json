@@ -2,8 +2,8 @@
   "name": "uroborosql-fmt-server",
   "description": "uroborosql-fmt server",
   "version": "1.0.0",
-  "author": "k-kawabt",
-  "license": "MIT",
+  "author": "Future Corporation",
+  "license": "BUSL-1.1",
   "engines": {
     "node": "*"
   },
