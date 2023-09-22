@@ -38,7 +38,7 @@
       "properties": {
         "uroborosql-fmt.configurationFilePath": {
           "type": "string",
-          "description": "The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./uroborosqlfmt-config.json`. If you doesn't specify and 'uroborosqlfmt-config.json' doesn't exist, formatter will use formatters default configurations."
+          "description": "The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`. If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations."
         }
       }
     }
