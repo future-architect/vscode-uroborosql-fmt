@@ -1,10 +1,10 @@
 {
   "name": "uroborosql-fmt-client",
   "description": "uroborosql-fmt client",
-  "author": "k-kawabt",
-  "license": "MIT",
+  "author": "Future Corporation",
+  "license": "BUSL-1.1",
   "version": "0.0.1",
-  "publisher": "k-kawabt",
+  "publisher": "Future",
   "repository": {},
   "engines": {
     "vscode": "^1.63.0"

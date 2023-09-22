@@ -1,19 +1,24 @@
 {
   "name": "uroborosql-fmt",
-  "description": "uroborosql-fmt extension",
-  "author": "k-kawabt",
-  "license": "MIT",
+  "description": "SQL formatter with 2way-sql support",
+  "author": "Future Corporation",
+  "license": "BUSL-1.1",
   "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "https://gitlab.nasa.future.co.jp/oss-incubate/rust-sql-formatter/uroborosql-fmt-extension"
+    "url": "https://github.com/future-architect/vscode-uroborosql-fmt.git"
   },
-  "publisher": "k-kawabt",
+  "publisher": "Future",
   "icon": "uroborosql-fmt-icon.png",
   "categories": [
     "Formatters"
   ],
-  "keywords": [],
+  "keywords": [
+    "uroborosql-fmt",
+    "sql",
+    "2way-sql",
+    "formatter"
+  ],
   "engines": {
     "vscode": "^1.63.0"
   },
@@ -33,7 +38,7 @@
       "properties": {
         "uroborosql-fmt.configurationFilePath": {
           "type": "string",
-          "description": "The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./uroborosqlfmt-config.json`. If you doesn't specify and 'uroborosqlfmt-config.json' doesn't exist, formatter will use formatters default configurations."
+          "description": "The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`. If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations."
         }
       }
     }
