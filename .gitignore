@@ -3,3 +3,4 @@ node_modules
 client/server
 .vscode-test
 uroborosql-fmt-1.0.0.vsix
+/server/uroborosql-fmt-napi-0.0.0.tgz

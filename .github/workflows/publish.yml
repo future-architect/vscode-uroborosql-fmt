@@ -51,9 +51,6 @@ jobs:
         with:
           node-version: 14.x
       - run: |
-          cd server
-          curl -OL https://future-architect.github.io/uroborosql-fmt/uroborosql-fmt-napi-0.0.0.tgz
-          cd ..
           npm install
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -48,8 +48,9 @@
     "compile": "tsc -b",
     "watch": "tsc -b -w",
     "lint": "eslint ./client/src ./server/src --ext .ts,.tsx",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-    "test": "sh ./scripts/e2e.sh"
+    "postinstall": "npm run download-uroborosql-fmt-napi && cd client && npm install && cd ../server && npm install && cd ..",
+    "test": "sh ./scripts/e2e.sh",
+    "download-uroborosql-fmt-napi": "node ./server/download-uroborosql-fmt-napi.mjs"
   },
   "devDependencies": {
     "@types/mocha": "^9.1.0",
