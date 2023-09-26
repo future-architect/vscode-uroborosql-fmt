@@ -49,7 +49,7 @@ jobs:
           node-version: 14.x
       - run: |
           cd server
-          wget https://future-architect.github.io/uroborosql-fmt/uroborosql-fmt-napi-0.0.0.tgz
+          curl -OL https://future-architect.github.io/uroborosql-fmt/uroborosql-fmt-napi-0.0.0.tgz
           cd ..
           npm install
         env:
