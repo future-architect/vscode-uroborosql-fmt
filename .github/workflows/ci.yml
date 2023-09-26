@@ -47,7 +47,11 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: 14.x
-      - run: npm install
+      - run: |
+          cd server
+          wget https://future-architect.github.io/uroborosql-fmt/uroborosql-fmt-napi-0.0.0.tgz
+          cd ..
+          npm install
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_arch: ${{ matrix.npm_config_arch }}
