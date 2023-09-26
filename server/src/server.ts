@@ -14,6 +14,9 @@ import {
   TextDocumentEdit,
   Position,
   Range,
+  DocumentFormattingRequest,
+  DocumentFilter,
+  DocumentFormattingRegistrationOptions,
 } from "vscode-languageserver/node";
 
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -80,6 +83,12 @@ connection.onInitialized(() => {
       connection.console.log("Workspace folder change event received.");
     });
   }
+
+  const filter: DocumentFilter = { language: "sql" };
+  const options: DocumentFormattingRegistrationOptions = {
+    documentSelector: [filter],
+  };
+  connection.client.register(DocumentFormattingRequest.type, options);
 });
 
 type ConfigurationSettings = {
@@ -122,18 +131,18 @@ async function formatText(
   textDocument: TextDocument,
   version: number,
   selections: Range[]
-): Promise<void> {
+): Promise<TextEdit[]> {
   const settings: ConfigurationSettings = await getSettings(uri);
-  
+
   const workspaceFolder: string | undefined = await getWorkspaceFolder(textDocument);
   if (!workspaceFolder) {
     connection.window.showErrorMessage("The workspace folder is undefined");
-    return;
+    return [];
   }
 
   // version check
   if (version !== textDocument.version) {
-    return;
+    return [];
   }
 
   // remove scheme
@@ -160,7 +169,7 @@ async function formatText(
       connection.window.showErrorMessage(
         `${specifiedConfigPath} doesn't exist.`
       );
-      return;
+      return [];
     }
   }
 
@@ -180,7 +189,7 @@ async function formatText(
       formatted_text = runfmt(text, configPath);
     } catch (e) {
       console.error(e);
-      return;
+      return [];
     }
 
     // フォーマット
@@ -200,7 +209,7 @@ async function formatText(
       connection.window.showErrorMessage(
         `Formatter error. src:${textDocument.uri}, config:${configPath} msg: ${e}`
       );
-      return;
+      return [];
     }
     //タイマーストップ
     const endTime = performance.now();
@@ -218,19 +227,11 @@ async function formatText(
     );
   }
 
-  // 変更を適用
-  connection.workspace.applyEdit({
-    documentChanges: [
-      TextDocumentEdit.create(
-        { uri: textDocument.uri, version: textDocument.version },
-        changes
-      ),
-    ],
-  });
+  return changes;
 }
 
 // コマンド実行時に行う処理
-connection.onExecuteCommand((params) => {
+connection.onExecuteCommand(async (params) => {
   if (
     params.command !== "uroborosql-fmt.executeFormat" ||
     params.arguments == null
@@ -247,7 +248,27 @@ connection.onExecuteCommand((params) => {
   const version = params.arguments[1];
   const selections = params.arguments[2];
 
-  formatText(uri, textDocument, version, selections);
+  const changes = await formatText(uri, textDocument, version, selections);
+
+  // 変更を適用
+  connection.workspace.applyEdit({
+    documentChanges: [
+      TextDocumentEdit.create(
+        { uri: textDocument.uri, version: textDocument.version },
+        changes
+      ),
+    ],
+  });
+});
+
+connection.onDocumentFormatting(async (params): Promise<TextEdit[]> => {
+  const uri = params.textDocument.uri;
+  const textDocument = documents.get(uri);
+  if (textDocument == null) {
+    return [];
+  }
+
+  return formatText(uri, textDocument, textDocument.version, []);
 });
 
 // Make the text document manager listen on the connection
