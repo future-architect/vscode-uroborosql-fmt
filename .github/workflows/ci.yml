@@ -9,10 +9,10 @@ jobs:
             platform: win32
             arch: x64
             npm_config_arch: x64
-          # - os: windows-latest
-          #   platform: win32
-          #   arch: ia32
-          #   npm_config_arch: ia32
+          - os: windows-latest
+            platform: win32
+            arch: ia32
+            npm_config_arch: ia32
           - os: windows-latest
             platform: win32
             arch: arm64
@@ -29,10 +29,10 @@ jobs:
             platform: linux
             arch: armhf
             npm_config_arch: arm
-          # - os: ubuntu-latest
-          #   platform: alpine
-          #   arch: x64
-          #   npm_config_arch: x64
+          - os: ubuntu-latest
+            platform: alpine
+            arch: x64
+            npm_config_arch: x64
           - os: macos-latest
             platform: darwin
             arch: x64
