@@ -34,7 +34,7 @@ You can enable format on save for SQL by having the following values in your set
 ## Settings
 
 | Settings                             | Defaults | Description                                                                                                                                                                                                                                                                                               |
-| -------- | -------- | ----------- |
+| ------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | uroborosql-fmt.configurationFilePath | null     | The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`. If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations. |
 
 ## License
