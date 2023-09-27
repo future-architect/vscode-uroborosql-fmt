@@ -26,7 +26,7 @@ import * as fs from "fs";
 
 import { performance } from "perf_hooks";
 import path = require("path");
-import { URI } from 'vscode-uri';
+import { URI } from "vscode-uri";
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -36,7 +36,7 @@ const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
+// let hasDiagnosticRelatedInformationCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
   const capabilities = params.capabilities;
@@ -49,11 +49,11 @@ connection.onInitialize((params: InitializeParams) => {
   hasWorkspaceFolderCapability = !!(
     capabilities.workspace && !!capabilities.workspace.workspaceFolders
   );
-  hasDiagnosticRelatedInformationCapability = !!(
-    capabilities.textDocument &&
-    capabilities.textDocument.publishDiagnostics &&
-    capabilities.textDocument.publishDiagnostics.relatedInformation
-  );
+  // hasDiagnosticRelatedInformationCapability = !!(
+  //   capabilities.textDocument &&
+  //   capabilities.textDocument.publishDiagnostics &&
+  //   capabilities.textDocument.publishDiagnostics.relatedInformation
+  // );
 
   const result: InitializeResult = {
     capabilities: {
@@ -75,11 +75,11 @@ connection.onInitialized(() => {
     // Register for all configuration changes.
     connection.client.register(
       DidChangeConfigurationNotification.type,
-      undefined
+      undefined,
     );
   }
   if (hasWorkspaceFolderCapability) {
-    connection.workspace.onDidChangeWorkspaceFolders((_event) => {
+    connection.workspace.onDidChangeWorkspaceFolders(() => {
       connection.console.log("Workspace folder change event received.");
     });
   }
@@ -102,22 +102,29 @@ function getSettings(resource: string): Thenable<ConfigurationSettings> {
   });
 }
 
-async function getWorkspaceFolder(document: TextDocument) : Promise<string | undefined>{
-  const {scheme, fsPath}  = URI.parse(document.uri);
+async function getWorkspaceFolder(
+  document: TextDocument,
+): Promise<string | undefined> {
+  const { scheme, fsPath } = URI.parse(document.uri);
 
-  if (scheme === 'untitled') {
-    const uri =  (await connection.workspace.getWorkspaceFolders())?.[0]?.uri;
+  if (scheme === "untitled") {
+    const uri = (await connection.workspace.getWorkspaceFolders())?.[0]?.uri;
     return uri ? URI.parse(uri).fsPath : undefined;
   }
-  
+
   if (fsPath) {
     const workspaceFolders = await connection.workspace.getWorkspaceFolders();
 
     if (workspaceFolders) {
       const wsFolder = workspaceFolders.find((wsFolder) => {
-        const {scheme: wsScheme, fsPath: wsFsPath} = URI.parse(wsFolder.uri);
+        const { scheme: wsScheme, fsPath: wsFsPath } = URI.parse(wsFolder.uri);
         const relative = path.relative(wsFsPath, fsPath);
-        return scheme == wsScheme && relative && !relative.startsWith("..") && !path.isAbsolute(relative);
+        return (
+          scheme == wsScheme &&
+          relative &&
+          !relative.startsWith("..") &&
+          !path.isAbsolute(relative)
+        );
       });
 
       return wsFolder ? wsFolder.uri : undefined;
@@ -130,11 +137,12 @@ async function formatText(
   uri: string,
   textDocument: TextDocument,
   version: number,
-  selections: Range[]
+  selections: Range[],
 ): Promise<TextEdit[]> {
   const settings: ConfigurationSettings = await getSettings(uri);
 
-  const workspaceFolder: string | undefined = await getWorkspaceFolder(textDocument);
+  const workspaceFolder: string | undefined =
+    await getWorkspaceFolder(textDocument);
   if (!workspaceFolder) {
     connection.window.showErrorMessage("The workspace folder is undefined");
     return [];
@@ -147,7 +155,10 @@ async function formatText(
 
   // remove scheme
   const workspaceFolderPath = URI.parse(workspaceFolder).fsPath;
-  const defaultConfigPath = path.join(workspaceFolderPath, ".uroborosqlfmtrc.json");
+  const defaultConfigPath = path.join(
+    workspaceFolderPath,
+    ".uroborosqlfmtrc.json",
+  );
 
   let configPath: string | null = null;
   if (!settings.configurationFilePath) {
@@ -162,12 +173,12 @@ async function formatText(
     if (!path.isAbsolute(specifiedConfigPath)) {
       specifiedConfigPath = path.join(workspaceFolderPath, specifiedConfigPath);
     }
-    
+
     if (fs.existsSync(specifiedConfigPath)) {
       configPath = specifiedConfigPath;
     } else {
       connection.window.showErrorMessage(
-        `${specifiedConfigPath} doesn't exist.`
+        `${specifiedConfigPath} doesn't exist.`,
       );
       return [];
     }
@@ -207,7 +218,7 @@ async function formatText(
     } catch (e) {
       console.error(e);
       connection.window.showErrorMessage(
-        `Formatter error. src:${textDocument.uri}, config:${configPath} msg: ${e}`
+        `Formatter error. src:${textDocument.uri}, config:${configPath} msg: ${e}`,
       );
       return [];
     }
@@ -220,10 +231,10 @@ async function formatText(
       TextEdit.replace(
         Range.create(
           Position.create(0, 0),
-          textDocument.positionAt(text.length)
+          textDocument.positionAt(text.length),
         ),
-        formatted_text
-      )
+        formatted_text,
+      ),
     );
   }
 
@@ -255,7 +266,7 @@ connection.onExecuteCommand(async (params) => {
     documentChanges: [
       TextDocumentEdit.create(
         { uri: textDocument.uri, version: textDocument.version },
-        changes
+        changes,
       ),
     ],
   });
