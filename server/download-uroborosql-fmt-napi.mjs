@@ -12,7 +12,7 @@ async function main() {
   const agent = autoProxyAgent();
   const res = await fetch(
     "https://future-architect.github.io/uroborosql-fmt/uroborosql-fmt-napi-0.0.0.tgz",
-    agent ? { dispatcher: agent } : undefined
+    agent ? { dispatcher: agent } : undefined,
   );
   const destination = join(__dirname, "uroborosql-fmt-napi-0.0.0.tgz");
   writeFileSync(destination, Buffer.from(await res.arrayBuffer()));
@@ -39,7 +39,7 @@ function autoProxyAgent() {
     token:
       proxyUrl.username || proxyUrl.password
         ? `Basic ${Buffer.from(
-            `${proxyUrl.username}:${proxyUrl.password}`
+            `${proxyUrl.username}:${proxyUrl.password}`,
           ).toString("base64")}`
         : undefined,
   });
