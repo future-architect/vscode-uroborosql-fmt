@@ -59,6 +59,7 @@
     "@typescript-eslint/parser": "^5.30.0",
     "eslint": "^8.13.0",
     "mocha": "^9.2.1",
-    "typescript": "^4.8.4"
+    "typescript": "^4.8.4",
+    "undici": "^5.25.2"
   }
 }
