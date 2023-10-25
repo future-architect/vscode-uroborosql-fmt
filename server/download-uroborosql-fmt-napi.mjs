@@ -2,6 +2,7 @@ import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { ProxyAgent } from "undici";
+import * as cp from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,10 +13,12 @@ async function main() {
   const agent = autoProxyAgent();
   const res = await fetch(
     "https://future-architect.github.io/uroborosql-fmt/uroborosql-fmt-napi-0.0.0.tgz",
-    agent ? { dispatcher: agent } : undefined,
+    agent ? { dispatcher: agent } : undefined
   );
   const destination = join(__dirname, "uroborosql-fmt-napi-0.0.0.tgz");
   writeFileSync(destination, Buffer.from(await res.arrayBuffer()));
+
+  cp.execSync(`npm install ${destination}`, { cwd: __dirname });
 }
 
 function autoProxyAgent() {
