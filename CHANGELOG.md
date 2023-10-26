@@ -1,5 +1,11 @@
 ### 1.0.8
 
+## 1.0.9
+
+### Patch Changes
+
+- [#31](https://github.com/future-architect/vscode-uroborosql-fmt/pull/31) [`de23cbb`](https://github.com/future-architect/vscode-uroborosql-fmt/commit/de23cbbeda809ad582014cfa8c0bbaded391aaf8) Thanks [@tanzaku](https://github.com/tanzaku)! - Support join clause in update statement
+
 - Fix lack of null expression handling in type_cast
 - Add option to convert "<>" to "!="
 - Add description of configuration to README.md
