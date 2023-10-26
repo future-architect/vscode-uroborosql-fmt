@@ -2,7 +2,7 @@
 
 ### Patch Changes
 
-- de23cbb: Support join clause in update statement
+- 53862d7: Support join clause in update statement
 
 ## 1.0.8
 
