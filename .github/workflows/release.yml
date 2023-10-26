@@ -15,6 +15,7 @@ permissions:
 jobs:
   release:
     name: Release
+    if: github.repository == 'future-architect/vscode-uroborosql-fmt'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
