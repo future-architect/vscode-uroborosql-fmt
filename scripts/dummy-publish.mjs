@@ -9,11 +9,9 @@ function main() {
   cp.execSync("git fetch --tags origin");
 
   const tags = cp.execSync("git tag").toString().split("\n");
-  const changelog = readFileSync("CHANGELOG.md", "utf8");
+  const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 
-  const latestVersion = changelog.match(/^## (?<version>\d\.\d\.\d)/m);
-
-  if (!tags.includes(`v${latestVersion.groups.version}`)) {
+  if (!tags.includes(`v${pkg["version"]}`)) {
     console.log('"New tag:"');
   }
 }
