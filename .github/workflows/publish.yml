@@ -1,5 +1,11 @@
 name: Publish
 on:
+  workflow_call:
+    secrets:
+      VSCE_PAT:
+        required: false
+      GITHUB_TOKEN:
+        required: false
   push:
     tags:
       - "*"
