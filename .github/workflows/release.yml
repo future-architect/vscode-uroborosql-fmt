@@ -36,8 +36,10 @@ jobs:
           publish: npm run dummy-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Invoke publish.yml
-        if: steps.changesets.outputs.published == 'true'
-        uses: ./.github/workflows/publish.yaml
-        secrets: inherit
+    outputs:
+      changesets_published: ${{ steps.changesets.outputs.published }}
+  invoke_publish:
+    needs: [release]
+    if: ${{ success() && needs.release.outputs.changesets_published == 'true'}}
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit
