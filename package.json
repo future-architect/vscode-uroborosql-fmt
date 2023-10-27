@@ -55,7 +55,8 @@
     "format:check": "prettier --cache --check .",
     "postinstall": "npm run download-uroborosql-fmt-napi && cd client && npm install && cd ../server && npm install && cd ..",
     "test": "sh ./scripts/e2e.sh",
-    "download-uroborosql-fmt-napi": "node ./server/download-uroborosql-fmt-napi.mjs"
+    "download-uroborosql-fmt-napi": "node ./server/download-uroborosql-fmt-napi.mjs",
+    "dummy-release": "node ./scripts/dummy-publish.mjs"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^0.4.8",
