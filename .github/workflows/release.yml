@@ -30,8 +30,14 @@ jobs:
         run: yarn
 
       - name: Create Release Pull Request
+        id: changesets
         uses: changesets/action@v1
         with:
           publish: npm run dummy-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Invoke publish.yml
+        if: steps.changesets.outputs.published == 'true'
+        uses: ./.github/workflows/publish.yaml
+        secrets: inherit
