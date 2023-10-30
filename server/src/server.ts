@@ -144,11 +144,11 @@ async function determineConfigPath(
     return null;
   }
 
+  // remove scheme
   const workspaceFolderPath = URI.parse(workspaceFolder).fsPath;
 
   const settings: ConfigurationSettings = await getSettings(uri);
   if (!settings.configurationFilePath) {
-    // remove scheme
     const defaultConfigPath = path.join(
       workspaceFolderPath,
       ".uroborosqlfmtrc.json",
