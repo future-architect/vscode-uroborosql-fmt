@@ -183,11 +183,6 @@ async function formatText(
   version: number,
   selections: Range[],
 ): Promise<TextEdit[]> {
-  // version check
-  if (version !== textDocument.version) {
-    return [];
-  }
-
   let configPath: string | null;
 
   try {
@@ -197,6 +192,11 @@ async function formatText(
       connection.window.showErrorMessage(e.message);
     }
 
+    return [];
+  }
+
+  // version check
+  if (version !== textDocument.version) {
     return [];
   }
 
