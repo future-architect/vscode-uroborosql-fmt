@@ -133,55 +133,71 @@ async function getWorkspaceFolder(
   return undefined;
 }
 
+async function determineConfigPath(
+  uri: string,
+  textDocument: TextDocument,
+): Promise<string | null> {
+  const workspaceFolder: string | undefined =
+    await getWorkspaceFolder(textDocument);
+
+  if (!workspaceFolder) {
+    return null;
+  }
+
+  // remove scheme
+  const workspaceFolderPath = URI.parse(workspaceFolder).fsPath;
+
+  const settings: ConfigurationSettings = await getSettings(uri);
+  if (!settings.configurationFilePath) {
+    const defaultConfigPath = path.join(
+      workspaceFolderPath,
+      ".uroborosqlfmtrc.json",
+    );
+
+    // The path of configuration file is not specified.
+    // If defaultConfigPath doesn't exist, fomatters default config will be used.
+    if (!fs.existsSync(defaultConfigPath)) {
+      return null;
+    }
+
+    return defaultConfigPath;
+  }
+
+  let specifiedConfigPath = settings.configurationFilePath;
+  if (!path.isAbsolute(specifiedConfigPath)) {
+    specifiedConfigPath = path.join(workspaceFolderPath, specifiedConfigPath);
+  }
+
+  if (!fs.existsSync(specifiedConfigPath)) {
+    // If the path is explicitly specified but the file does not exist,
+    // it is not formatted and an error is generated.
+    throw new Error(`${specifiedConfigPath} doesn't exist.`);
+  }
+
+  return specifiedConfigPath;
+}
+
 async function formatText(
   uri: string,
   textDocument: TextDocument,
   version: number,
   selections: Range[],
 ): Promise<TextEdit[]> {
-  const settings: ConfigurationSettings = await getSettings(uri);
+  let configPath: string | null;
 
-  const workspaceFolder: string | undefined =
-    await getWorkspaceFolder(textDocument);
-  if (!workspaceFolder) {
-    connection.window.showErrorMessage("The workspace folder is undefined");
+  try {
+    configPath = await determineConfigPath(uri, textDocument);
+  } catch (e) {
+    if (e instanceof Error) {
+      connection.window.showErrorMessage(e.message);
+    }
+
     return [];
   }
 
   // version check
   if (version !== textDocument.version) {
     return [];
-  }
-
-  // remove scheme
-  const workspaceFolderPath = URI.parse(workspaceFolder).fsPath;
-  const defaultConfigPath = path.join(
-    workspaceFolderPath,
-    ".uroborosqlfmtrc.json",
-  );
-
-  let configPath: string | null = null;
-  if (!settings.configurationFilePath) {
-    // The path of configuration file is not specified.
-    // If defaultConfigPath doesn't exist, fomatters default config will be used.
-    if (fs.existsSync(defaultConfigPath)) {
-      configPath = defaultConfigPath;
-    }
-    // else { configPath = null; }
-  } else {
-    let specifiedConfigPath = settings.configurationFilePath;
-    if (!path.isAbsolute(specifiedConfigPath)) {
-      specifiedConfigPath = path.join(workspaceFolderPath, specifiedConfigPath);
-    }
-
-    if (fs.existsSync(specifiedConfigPath)) {
-      configPath = specifiedConfigPath;
-    } else {
-      connection.window.showErrorMessage(
-        `${specifiedConfigPath} doesn't exist.`,
-      );
-      return [];
-    }
   }
 
   const changes: TextEdit[] = [];
@@ -194,27 +210,27 @@ async function formatText(
       continue;
     }
 
-    let formatted_text: string;
+    let formattedText: string;
 
     try {
-      formatted_text = runfmt(text, configPath);
+      formattedText = runfmt(text, configPath);
     } catch (e) {
       console.error(e);
       return [];
     }
 
     // フォーマット
-    changes.push(TextEdit.replace(selection, formatted_text));
+    changes.push(TextEdit.replace(selection, formattedText));
   }
 
   if (!changes.length) {
     // テキスト全体を取得
     const text = textDocument.getText();
 
-    let formatted_text: string;
+    let formattedText: string;
     const startTime = performance.now();
     try {
-      formatted_text = runfmt(text, configPath);
+      formattedText = runfmt(text, configPath);
     } catch (e) {
       console.error(e);
       connection.window.showErrorMessage(
@@ -233,7 +249,7 @@ async function formatText(
           Position.create(0, 0),
           textDocument.positionAt(text.length),
         ),
-        formatted_text,
+        formattedText,
       ),
     );
   }
