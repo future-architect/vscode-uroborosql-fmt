@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.10
+
+### Patch Changes
+
+- 5fdb841: Support using clause in DELETE statement. Fix formatting of bind parameter in first column of select clause. Improvement error message.
+- 804f9d7: Allow formatting even if the workspace folder cannot be obtained
+
 ## 1.0.9
 
 ### Patch Changes
