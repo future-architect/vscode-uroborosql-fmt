@@ -144,18 +144,13 @@ async function getWorkspaceFolder(
   return undefined;
 }
 
-async function getVSCodeOptions(
-  uri: string,
-  textDocument: TextDocument,
-): Promise<Partial<ConfigurationSettings> | null> {
-  const workspaceFolder: string | undefined =
-    await getWorkspaceFolder(textDocument);
-
+function getVSCodeOptions(
+  settings: ConfigurationSettings,
+  workspaceFolder: string | undefined,
+): Partial<ConfigurationSettings> | null {
   if (!workspaceFolder) {
     return null;
   }
-
-  const settings = await getSettings(uri);
 
   // remove configurationFilePath
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -173,13 +168,10 @@ async function getVSCodeOptions(
   return objectToSnake(removedNullSettings);
 }
 
-async function determineConfigPath(
-  uri: string,
-  textDocument: TextDocument,
-): Promise<string | null> {
-  const workspaceFolder: string | undefined =
-    await getWorkspaceFolder(textDocument);
-
+function determineConfigPath(
+  settings: ConfigurationSettings,
+  workspaceFolder: string | undefined,
+): string | null {
   if (!workspaceFolder) {
     return null;
   }
@@ -187,7 +179,6 @@ async function determineConfigPath(
   // remove scheme
   const workspaceFolderPath = URI.parse(workspaceFolder).fsPath;
 
-  const settings: ConfigurationSettings = await getSettings(uri);
   if (!settings.configurationFilePath) {
     const defaultConfigPath = path.join(
       workspaceFolderPath,
@@ -223,10 +214,15 @@ async function formatText(
   version: number,
   selections: Range[],
 ): Promise<TextEdit[]> {
+  const workspaceFolder: string | undefined =
+    await getWorkspaceFolder(textDocument);
+
+  const settings: ConfigurationSettings = await getSettings(uri);
+
   let configPath: string | null;
 
   try {
-    configPath = await determineConfigPath(uri, textDocument);
+    configPath = determineConfigPath(settings, workspaceFolder);
   } catch (e) {
     if (e instanceof Error) {
       connection.window.showErrorMessage(e.message);
@@ -241,8 +237,10 @@ async function formatText(
   }
 
   // settings specified by vscode ui
-  const settings = await getVSCodeOptions(uri, textDocument);
-  const settingsString = settings != null ? JSON.stringify(settings) : "{}";
+  const specifiedSettings = getVSCodeOptions(settings, workspaceFolder);
+  const settingsString = specifiedSettings
+    ? JSON.stringify(specifiedSettings)
+    : "{}";
 
   const changes: TextEdit[] = [];
 
