@@ -17,12 +17,13 @@ import {
 
 import { TextDocument } from "vscode-languageserver-textdocument";
 
-import { runfmt } from "uroborosql-fmt-napi";
+import { runfmtWithSettings } from "uroborosql-fmt-napi";
 import * as fs from "fs";
 
 import { performance } from "perf_hooks";
 import path = require("path");
 import { URI } from "vscode-uri";
+import { objectToSnake } from "ts-case-convert";
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
@@ -89,6 +90,20 @@ connection.onInitialized(() => {
 
 type ConfigurationSettings = {
   configurationFilePath: string;
+  debug: boolean | null | undefined;
+  tabSize: number | null | undefined;
+  complementAlias: boolean | null | undefined;
+  trimBindParam: boolean | null | undefined;
+  keywordCase: string | null | undefined;
+  identifierCase: string | null | undefined;
+  maxCharPerLine: number | null | undefined;
+  complementOuterKeyword: boolean | null | undefined;
+  complementColumnAsKeyword: boolean | null | undefined;
+  removeTableAsKeyword: boolean | null | undefined;
+  removeRedundantNest: boolean | null | undefined;
+  complementSqlId: boolean | null | undefined;
+  convertDoubleColonCast: boolean | null | undefined;
+  unifyNotEqual: boolean | null | undefined;
 };
 
 function getSettings(resource: string): Thenable<ConfigurationSettings> {
@@ -127,6 +142,35 @@ async function getWorkspaceFolder(
     }
   }
   return undefined;
+}
+
+async function getVSCodeOptions(
+  uri: string,
+  textDocument: TextDocument,
+): Promise<Partial<ConfigurationSettings> | null> {
+  const workspaceFolder: string | undefined =
+    await getWorkspaceFolder(textDocument);
+
+  if (!workspaceFolder) {
+    return null;
+  }
+
+  const settings = await getSettings(uri);
+
+  // remove configurationFilePath
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { configurationFilePath, ...restConfiguration } = settings;
+
+  // translate null (that means unsupecified option) to undefined
+  const removedNullSettings = Object.fromEntries(
+    Object.entries(restConfiguration).map(([key, value]) => [
+      key,
+      value === null ? undefined : value,
+    ]),
+  );
+
+  // to snake case for uroborosql-fmt
+  return objectToSnake(removedNullSettings);
 }
 
 async function determineConfigPath(
@@ -196,6 +240,10 @@ async function formatText(
     return [];
   }
 
+  // settings specified by vscode ui
+  const settings = await getVSCodeOptions(uri, textDocument);
+  const settingsString = settings != null ? JSON.stringify(settings) : "{}";
+
   const changes: TextEdit[] = [];
 
   // 全ての選択範囲に対して実行
@@ -209,7 +257,7 @@ async function formatText(
     let formattedText: string;
 
     try {
-      formattedText = runfmt(text, configPath);
+      formattedText = runfmtWithSettings(text, settingsString, configPath);
       // ステータスバーの背景を通常色に変更
       connection.sendRequest("custom/normal", []);
     } catch (e) {
@@ -230,7 +278,7 @@ async function formatText(
     let formattedText: string;
     const startTime = performance.now();
     try {
-      formattedText = runfmt(text, configPath);
+      formattedText = runfmtWithSettings(text, settingsString, configPath);
       // ステータスバーの背景を通常色に変更
       connection.sendRequest("custom/normal", []);
     } catch (e) {

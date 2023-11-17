@@ -39,6 +39,128 @@
         "uroborosql-fmt.configurationFilePath": {
           "type": "string",
           "description": "The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`. If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations."
+        },
+        "uroborosql-fmt.debug": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "description": "Run in debug mode."
+        },
+        "uroborosql-fmt.tabSize": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "description": "Tan size used for formatting."
+        },
+        "uroborosql-fmt.complementAlias": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Complement aliases. Currently, column names are auto-completed with the same name. (e.g. `COL1` → `COL1 AS COL1`)"
+        },
+        "uroborosql-fmt.trimBindParam": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Trim the contents of the [bind parameters](https://future-architect.github.io/uroborosql-doc/background/#%E3%83%8F%E3%82%99%E3%82%A4%E3%83%B3%E3%83%88%E3%82%99%E3%83%8F%E3%82%9A%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF). (e.g. `/* foo */` → `/*foo*/`)"
+        },
+        "uroborosql-fmt.keywordCase": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "enum": [
+            "upper",
+            "lower",
+            "preserve"
+          ],
+          "markdownDescription": "Unify the case of keywords. (No conversion in case of `\"preserve\"`)"
+        },
+        "uroborosql-fmt.identifierCase": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "enum": [
+            "upper",
+            "lower",
+            "preserve"
+          ],
+          "markdownDescription": "Unify the case of identifiers. (No conversion in case of `\"preserve\"`)"
+        },
+        "uroborosql-fmt.maxCharPerLine": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "If the total number of characters in the function name and arguments exceeds `max_char_per_line`, the arguments are formatted with new lines."
+        },
+        "uroborosql-fmt.complementOuterKeyword": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Complement the optional OUTER. (e.g. `LEFT JOIN` → `LEFT OUTER JOIN`)"
+        },
+        "uroborosql-fmt.complementColumnAsKeyword": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Complement `AS` in column aliases."
+        },
+        "uroborosql-fmt.removeTableAsKeyword": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Remove `AS` in table aliases."
+        },
+        "uroborosql-fmt.removeRedundantNest": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Remove redundant parentheses. (e.g. (`((foo))`) → `(foo)`)"
+        },
+        "uroborosql-fmt.complementSqlId": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "description": "Complement SQL ID."
+        },
+        "uroborosql-fmt.convertDoubleColonCast": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Convert casts by `X::type` to the form `CAST(X AS type)`."
+        },
+        "uroborosql-fmt.unifyNotEqual": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Convert comparison operator `<>` to `!=`"
         }
       }
     }
