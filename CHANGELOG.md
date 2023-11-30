@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.11
+
+### Patch Changes
+
+- 988c76d: Fixed incorrect indentation when tab_size is 2byte
+
 ## 1.0.10
 
 ### Patch Changes
