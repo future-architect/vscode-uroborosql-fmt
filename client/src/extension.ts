@@ -1,5 +1,5 @@
 import * as path from "path";
-import { workspace, ExtensionContext, window, commands } from "vscode";
+import { workspace, ExtensionContext, window, commands, StatusBarAlignment, ThemeColor, StatusBarItem } from "vscode";
 
 import {
   LanguageClient,
@@ -66,8 +66,51 @@ export function activate(context: ExtensionContext) {
     }),
   );
 
+
+
+  // ステータスバーの作成と表示
+  const statusBar = createStatusBar();
+  statusBar.show();
+
+  client.onReady().then(() => {
+    // ステータスバーの背景色を黄色に変更
+    client.onRequest("custom/warning", () => {
+      statusBar.backgroundColor = new ThemeColor(
+        "statusBarItem.warningBackground"
+      );
+    });
+
+    // ステータスバーの背景色を赤色に変更
+    client.onRequest("custom/error", () => {
+      statusBar.backgroundColor = new ThemeColor(
+        "statusBarItem.errorBackground"
+      );
+    })
+
+    // ステータスバーの背景色を通常色に変更
+    client.onRequest("custom/normal", () => {
+      statusBar.backgroundColor = new ThemeColor(
+        "statusBarItem.fourgroundBackground"
+      );
+    })
+  })
+
   // Start the client. This will also launch the server
   client.start();
+}
+
+function createStatusBar(): StatusBarItem {
+  commands.registerCommand("uroborosql-fmt.show-output", async () => {
+    const output_channnel = client.outputChannel;
+    output_channnel.show();
+  });
+
+  const statusBar = window.createStatusBarItem(StatusBarAlignment.Right, 100);
+  statusBar.text = 'Uroborosql-fmt';
+  statusBar.name = 'Uroborosql-fmt';
+  statusBar.command = 'uroborosql-fmt.show-output'
+
+  return statusBar;
 }
 
 export function deactivate(): Thenable<void> | undefined {
