@@ -1,5 +1,13 @@
 import * as path from "path";
-import { workspace, ExtensionContext, window, commands, StatusBarAlignment, ThemeColor, StatusBarItem } from "vscode";
+import {
+  workspace,
+  ExtensionContext,
+  window,
+  commands,
+  StatusBarAlignment,
+  ThemeColor,
+  StatusBarItem,
+} from "vscode";
 
 import {
   LanguageClient,
@@ -66,8 +74,6 @@ export function activate(context: ExtensionContext) {
     }),
   );
 
-
-
   // ステータスバーの作成と表示
   const statusBar = createStatusBar();
   statusBar.show();
@@ -76,27 +82,27 @@ export function activate(context: ExtensionContext) {
     // ステータスバーの背景色を黄色に変更
     client.onRequest("custom/warning", () => {
       statusBar.backgroundColor = new ThemeColor(
-        "statusBarItem.warningBackground"
+        "statusBarItem.warningBackground",
       );
-      statusBar.text = "$(warning) Uroborosql-fmt"
+      statusBar.text = "$(warning) Uroborosql-fmt";
     });
 
     // ステータスバーの背景色を赤色に変更
     client.onRequest("custom/error", () => {
       statusBar.backgroundColor = new ThemeColor(
-        "statusBarItem.errorBackground"
+        "statusBarItem.errorBackground",
       );
-      statusBar.text = "$(alert) Uroborosql-fmt"
-    })
+      statusBar.text = "$(alert) Uroborosql-fmt";
+    });
 
     // ステータスバーの背景色を通常色に変更
     client.onRequest("custom/normal", () => {
       statusBar.backgroundColor = new ThemeColor(
-        "statusBarItem.fourgroundBackground"
+        "statusBarItem.fourgroundBackground",
       );
-      statusBar.text = "Uroborosql-fmt"
-    })
-  })
+      statusBar.text = "Uroborosql-fmt";
+    });
+  });
 
   // Start the client. This will also launch the server
   client.start();
@@ -109,9 +115,9 @@ function createStatusBar(): StatusBarItem {
   });
 
   const statusBar = window.createStatusBarItem(StatusBarAlignment.Right, 100);
-  statusBar.text = 'Uroborosql-fmt';
-  statusBar.name = 'Uroborosql-fmt';
-  statusBar.command = 'uroborosql-fmt.show-output'
+  statusBar.text = "Uroborosql-fmt";
+  statusBar.name = "Uroborosql-fmt";
+  statusBar.command = "uroborosql-fmt.show-output";
 
   return statusBar;
 }
