@@ -78,6 +78,7 @@ export function activate(context: ExtensionContext) {
       statusBar.backgroundColor = new ThemeColor(
         "statusBarItem.warningBackground"
       );
+      statusBar.text = "$(warning) Uroborosql-fmt"
     });
 
     // ステータスバーの背景色を赤色に変更
@@ -85,6 +86,7 @@ export function activate(context: ExtensionContext) {
       statusBar.backgroundColor = new ThemeColor(
         "statusBarItem.errorBackground"
       );
+      statusBar.text = "$(alert) Uroborosql-fmt"
     })
 
     // ステータスバーの背景色を通常色に変更
@@ -92,6 +94,7 @@ export function activate(context: ExtensionContext) {
       statusBar.backgroundColor = new ThemeColor(
         "statusBarItem.fourgroundBackground"
       );
+      statusBar.text = "Uroborosql-fmt"
     })
   })
 
