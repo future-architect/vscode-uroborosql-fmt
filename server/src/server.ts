@@ -210,8 +210,12 @@ async function formatText(
 
     try {
       formattedText = runfmt(text, configPath);
+      // ステータスバーの背景を通常色に変更
+      connection.sendRequest("custom/normal", []);
     } catch (e) {
       console.error(e);
+      // ステータスバーの背景を赤色に変更
+      connection.sendRequest("custom/error", []);
       return [];
     }
 
@@ -227,11 +231,12 @@ async function formatText(
     const startTime = performance.now();
     try {
       formattedText = runfmt(text, configPath);
+      // ステータスバーの背景を通常色に変更
+      connection.sendRequest("custom/normal", []);
     } catch (e) {
       console.error(e);
-      connection.window.showErrorMessage(
-        `Formatter error. src:${textDocument.uri}, config:${configPath} msg: ${e}`,
-      );
+      // ステータスバーの背景を赤色に変更
+      connection.sendRequest("custom/error", []);
       return [];
     }
     //タイマーストップ
