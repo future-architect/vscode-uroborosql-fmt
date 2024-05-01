@@ -158,10 +158,7 @@ function getVSCodeOptions(
 
   // translate null (that means unsupecified option) to undefined
   const removedNullSettings = Object.fromEntries(
-    Object.entries(restConfiguration).map(([key, value]) => [
-      key,
-      value === null ? undefined : value,
-    ]),
+    Object.entries(restConfiguration).filter(([, value]) => value != null),
   );
 
   // to snake case for uroborosql-fmt
@@ -241,7 +238,7 @@ async function formatText(
   const settingsString = specifiedSettings
     ? JSON.stringify(specifiedSettings)
     : "{}";
-
+  console.log(settingsString);
   const changes: TextEdit[] = [];
 
   // 全ての選択範囲に対して実行
