@@ -116,13 +116,8 @@
         },
         "uroborosql-fmt.maxCharPerLine": {
           "type": [
-            "number",
+            "integer",
             "null"
-          ],
-          "enum": [
-            true,
-            false,
-            null
           ],
           "default": null,
           "markdownDescription": "If the total number of characters in the function name and arguments exceeds `max_char_per_line`, the arguments are formatted with new lines. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
