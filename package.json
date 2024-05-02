@@ -55,9 +55,10 @@
         },
         "uroborosql-fmt.tabSize": {
           "type": [
-            "number",
+            "integer",
             "null"
           ],
+          "minimum": 0,
           "default": null,
           "description": "Tab size used for formatting."
         },
