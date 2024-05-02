@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0
+
+### Minor Changes
+
+- 5df3a5c: Improved to notify the status bar when formatting errors.
+- ee4d6d4: Added setting options to apply options of urborosql-fmt.
+
 ## 1.0.11
 
 ### Patch Changes
