@@ -59,7 +59,7 @@
             "null"
           ],
           "default": null,
-          "description": "Tan size used for formatting."
+          "description": "Tab size used for formatting."
         },
         "uroborosql-fmt.complementAlias": {
           "type": [
