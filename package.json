@@ -51,7 +51,7 @@
             null
           ],
           "default": null,
-          "description": "Run in debug mode."
+          "description": "Run in debug mode. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.tabSize": {
           "type": [
@@ -60,7 +60,7 @@
           ],
           "minimum": 0,
           "default": null,
-          "description": "Tab size used for formatting."
+          "description": "Tab size used for formatting. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.complementAlias": {
           "type": [
@@ -73,7 +73,7 @@
             null
           ],
           "default": null,
-          "markdownDescription": "Complement aliases. Currently, column names are auto-completed with the same name. (e.g. `COL1` → `COL1 AS COL1`)"
+          "markdownDescription": "Complement aliases. Currently, column names are auto-completed with the same name. (e.g. `COL1` → `COL1 AS COL1`) If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.trimBindParam": {
           "type": [
@@ -86,7 +86,7 @@
             null
           ],
           "default": null,
-          "markdownDescription": "Trim the contents of the [bind parameters](https://future-architect.github.io/uroborosql-doc/background/#%E3%83%8F%E3%82%99%E3%82%A4%E3%83%B3%E3%83%88%E3%82%99%E3%83%8F%E3%82%9A%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF). (e.g. `/* foo */` → `/*foo*/`)"
+          "markdownDescription": "Trim the contents of the [bind parameters](https://future-architect.github.io/uroborosql-doc/background/#%E3%83%8F%E3%82%99%E3%82%A4%E3%83%B3%E3%83%88%E3%82%99%E3%83%8F%E3%82%9A%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF). (e.g. `/* foo */` → `/*foo*/`) If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.keywordCase": {
           "type": [
@@ -99,7 +99,7 @@
             "lower",
             "preserve"
           ],
-          "markdownDescription": "Unify the case of keywords. (No conversion in case of `\"preserve\"`)"
+          "markdownDescription": "Unify the case of keywords. (No conversion in case of `\"preserve\"`) If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.identifierCase": {
           "type": [
@@ -112,7 +112,7 @@
             "lower",
             "preserve"
           ],
-          "markdownDescription": "Unify the case of identifiers. (No conversion in case of `\"preserve\"`)"
+          "markdownDescription": "Unify the case of identifiers. (No conversion in case of `\"preserve\"`) If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.maxCharPerLine": {
           "type": [
@@ -125,7 +125,7 @@
             null
           ],
           "default": null,
-          "markdownDescription": "If the total number of characters in the function name and arguments exceeds `max_char_per_line`, the arguments are formatted with new lines."
+          "markdownDescription": "If the total number of characters in the function name and arguments exceeds `max_char_per_line`, the arguments are formatted with new lines. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.complementOuterKeyword": {
           "type": [
@@ -138,7 +138,7 @@
             null
           ],
           "default": null,
-          "markdownDescription": "Complement the optional OUTER. (e.g. `LEFT JOIN` → `LEFT OUTER JOIN`)"
+          "markdownDescription": "Complement the optional OUTER. (e.g. `LEFT JOIN` → `LEFT OUTER JOIN`) If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.complementColumnAsKeyword": {
           "type": [
@@ -151,7 +151,7 @@
             null
           ],
           "default": null,
-          "markdownDescription": "Complement `AS` in column aliases."
+          "markdownDescription": "Complement `AS` in column aliases. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.removeTableAsKeyword": {
           "type": [
@@ -164,7 +164,7 @@
             null
           ],
           "default": null,
-          "markdownDescription": "Remove `AS` in table aliases."
+          "markdownDescription": "Remove `AS` in table aliases. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.removeRedundantNest": {
           "type": [
@@ -177,7 +177,7 @@
             null
           ],
           "default": null,
-          "markdownDescription": "Remove redundant parentheses. (e.g. (`((foo))`) → `(foo)`)"
+          "markdownDescription": "Remove redundant parentheses. (e.g. (`((foo))`) → `(foo)`) If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.complementSqlId": {
           "type": [
@@ -190,7 +190,7 @@
             null
           ],
           "default": null,
-          "description": "Complement SQL ID."
+          "description": "Complement SQL ID. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.convertDoubleColonCast": {
           "type": [
@@ -203,7 +203,7 @@
             null
           ],
           "default": null,
-          "markdownDescription": "Convert casts by `X::type` to the form `CAST(X AS type)`."
+          "markdownDescription": "Convert casts by `X::type` to the form `CAST(X AS type)`. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         },
         "uroborosql-fmt.unifyNotEqual": {
           "type": [
@@ -216,7 +216,7 @@
             null
           ],
           "default": null,
-          "markdownDescription": "Convert comparison operator `<>` to `!=`"
+          "markdownDescription": "Convert comparison operator `<>` to `!=`. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         }
       }
     }
