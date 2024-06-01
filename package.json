@@ -240,7 +240,7 @@
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.50.0",
     "mocha": "^10.2.0",
-    "prettier": "~3.2.0",
+    "prettier": "~3.3.0",
     "ts-case-convert": "^2.0.7",
     "typescript": "^5.2.2",
     "undici": "^6.0.0"
