@@ -34,7 +34,7 @@
       },
       {
         "command": "uroborosql-fmt.sync-config-file-with-extension-config",
-        "title": "Synchronize config file with Extension config"
+        "title": "Synchronize uroborosql-fmt config file with Extension config"
       }
     ],
     "configuration": {
