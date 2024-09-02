@@ -42,7 +42,7 @@ function autoProxyAgent() {
     token:
       proxyUrl.username || proxyUrl.password
         ? `Basic ${Buffer.from(
-            `${proxyUrl.username}:${proxyUrl.password}`,
+            `${proxyUrl.username}:${decodeURIComponent(proxyUrl.password)}`,
           ).toString("base64")}`
         : undefined,
   });
