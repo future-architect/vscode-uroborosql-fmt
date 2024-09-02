@@ -77,19 +77,30 @@ export function activate(context: ExtensionContext) {
     }),
   );
 
+  type OptionsRecord = Record<string, boolean | number | string>;
+
+  const isFileExists = async (uri: Uri): Promise<boolean> => {
+    try {
+      await workspace.fs.stat(uri);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.sync-config-file-with-extension-config",
       async () => {
         // uroborosql-fmt の設定を取得
-        const VSCodeConfig = workspace.getConfiguration("uroborosql-fmt");
+        const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
 
         // Default value of `uroborosql-fmt.configurationFilePath` is "".
-        const VSCodeConfigPath: string = VSCodeConfig.get(
+        const vsCodeConfigPath: string = vsCodeConfig.get(
           "configurationFilePath",
         );
         const configFilePath =
-          VSCodeConfigPath !== "" ? VSCodeConfigPath : ".uroborosqlfmtrc.json";
+          vsCodeConfigPath !== "" ? vsCodeConfigPath : ".uroborosqlfmtrc.json";
 
         // VSCodeで開いているディレクトリを取得
         // 開いていない場合はエラーを出して終了
@@ -104,8 +115,8 @@ export function activate(context: ExtensionContext) {
         const configFileFullPath = Uri.joinPath(folderPath, configFilePath);
 
         // 設定値 `configurationFilePath` の除外・ value が null のエントリを除外・ WorkSpaceConfiguration が持つメソッドと内部オブジェクトを除外
-        const formattingConfig = Object.fromEntries(
-          Object.entries(VSCodeConfig).filter(
+        const formattingConfig: OptionsRecord = Object.fromEntries(
+          Object.entries(vsCodeConfig).filter(
             ([key, value]) =>
               key !== "configurationFilePath" &&
               value !== null &&
@@ -114,13 +125,23 @@ export function activate(context: ExtensionContext) {
           ),
         );
 
-        const content = JSON.stringify(
-          objectToSnake(formattingConfig),
-          null,
-          2,
-        );
+        let existingConfig: OptionsRecord;
+        if (await isFileExists(configFileFullPath)) {
+          const file = await workspace.fs.readFile(configFileFullPath);
+          existingConfig = JSON.parse(file.toString());
+        } else {
+          existingConfig = {};
+        }
+
+        // 明示的に設定したものだけを上書きする
+        const merged = {
+          ...existingConfig,
+          ...objectToSnake(formattingConfig),
+        };
+        const content = JSON.stringify(merged, null, 2);
+
         const blob: Uint8Array = Buffer.from(content);
-        workspace.fs.writeFile(configFileFullPath, blob);
+        await workspace.fs.writeFile(configFileFullPath, blob);
       },
     ),
   );
