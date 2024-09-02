@@ -7,6 +7,7 @@ import {
   StatusBarAlignment,
   ThemeColor,
   StatusBarItem,
+  Uri,
 } from "vscode";
 
 import {
@@ -16,6 +17,8 @@ import {
   TransportKind,
   ExecuteCommandRequest,
 } from "vscode-languageclient/node";
+
+import { objectToSnake } from "ts-case-convert";
 
 let client: LanguageClient;
 
@@ -71,7 +74,40 @@ export function activate(context: ExtensionContext) {
         command: "uroborosql-fmt.executeFormat",
         arguments: [uri, version, selections],
       });
-    }),
+    })
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.sync-config-file-with-extension-config",
+      async () => {
+        // uroborosql-fmt の設定を取得
+        const VSCodeConfig = workspace.getConfiguration("uroborosql-fmt");
+
+        // Default value of `uroborosql-fmt.configurationFilePath` is "".
+        const VSCodeConfigPath: string = VSCodeConfig.get("configurationFilePath");
+        const configFilePath = (VSCodeConfigPath !== "") ?  VSCodeConfigPath : ".uroborosqlfmtrc.json"; 
+        
+        // VSCodeで開いているディレクトリを取得
+        // 開いていない場合はエラーを出して終了
+        const folders = workspace.workspaceFolders;
+        if (folders === undefined) {
+          window.showErrorMessage('Error: Open the folder before executing this command.');
+          return;
+        }
+        const folderPath = folders[0].uri;
+        const configFileFullPath = Uri.joinPath(folderPath, configFilePath);
+
+        // 設定値 `configurationFilePath` の除外・ value が null のエントリを除外・ WorkSpaceConfiguration が持つメソッドと内部オブジェクトを除外
+        const formattingConfig = Object.fromEntries(
+          Object.entries(VSCodeConfig).filter(([key, value]) => key !== "configurationFilePath" && value !== null && typeof value !== "function" && typeof value !== "object"),
+        );
+
+        const content = JSON.stringify(objectToSnake(formattingConfig), null, 2);
+        const blob: Uint8Array = Buffer.from(content);
+        workspace.fs.writeFile(configFileFullPath, blob);
+      }
+    )
   );
 
   // ステータスバーの作成と表示

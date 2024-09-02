@@ -31,6 +31,10 @@
       {
         "command": "uroborosql-fmt.uroborosql-format",
         "title": "format sql"
+      },
+      {
+        "command": "uroborosql-fmt.sync-config-file-with-extension-config",
+        "title": "Synchronize config file with Extension config"
       }
     ],
     "configuration": {
