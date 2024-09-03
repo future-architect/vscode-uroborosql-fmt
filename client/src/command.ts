@@ -38,7 +38,7 @@ export const format = (client: LanguageClient) => async (): Promise<void> => {
   });
 };
 
-export const syncSettings = async (): Promise<void> => {
+export const exportSettings = async (): Promise<void> => {
   // VSCodeで開いているディレクトリを取得
   // 開いていない場合はエラーを出して終了
   const folders = workspace.workspaceFolders;
