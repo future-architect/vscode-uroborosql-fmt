@@ -14,6 +14,19 @@ const isFileExists = async (uri: Uri): Promise<boolean> => {
   }
 };
 
+// uroborosql-fmt の設定ファイル名を取得する
+// ワークスペースの側で設定されている場合はその値を、設定されていない場合は ".uroborosqlfmtrc.json"を返す
+const getConfigFileName = (
+  defaultName: string = ".uroborosqlfmtrc.json",
+): string => {
+  // uroborosql-fmt の設定を取得
+  const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
+
+  // Default value of `uroborosql-fmt.configurationFilePath` is "".
+  const vsCodeConfigPath: string = vsCodeConfig.get("configurationFilePath");
+  return vsCodeConfigPath !== "" ? vsCodeConfigPath : defaultName;
+};
+
 export const format = (client: LanguageClient) => async (): Promise<void> => {
   const uri = window.activeTextEditor.document.uri;
   const version = window.activeTextEditor.document.version;
@@ -46,6 +59,11 @@ export const syncSettings = async (): Promise<void> => {
   const folderPath = folders[0].uri;
   const configFileFullPath = Uri.joinPath(folderPath, configFilePath);
 
+  // 設定ファイルのURIを作成
+  const configFile = Uri.joinPath(folders[0].uri, getConfigFileName());
+
+  // uroborosql-fmt の設定を取得
+  const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
   // 設定値 `configurationFilePath` の除外・ value が null のエントリを除外・ WorkSpaceConfiguration が持つメソッドと内部オブジェクトを除外
   const formattingConfig: OptionsRecord = Object.fromEntries(
     Object.entries(vsCodeConfig).filter(
@@ -58,8 +76,8 @@ export const syncSettings = async (): Promise<void> => {
   );
 
   let existingConfig: OptionsRecord;
-  if (await isFileExists(configFileFullPath)) {
-    const file = await workspace.fs.readFile(configFileFullPath);
+  if (await isFileExists(configFile)) {
+    const file = await workspace.fs.readFile(configFile);
     existingConfig = JSON.parse(file.toString());
   } else {
     existingConfig = {};
