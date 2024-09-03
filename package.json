@@ -35,6 +35,14 @@
       {
         "command": "uroborosql-fmt.sync-config-file-with-extension-config",
         "title": "Synchronize uroborosql-fmt config file with Extension config"
+      },
+      {
+        "command": "uroborosql-fmt.import",
+        "title": "Import uroborosql-fmt config to workspace"
+      },
+      {
+        "command": "uroborosql-fmt.export",
+        "title": "Export workspace config to uroborosql-fmt config file"
       }
     ],
     "configuration": {

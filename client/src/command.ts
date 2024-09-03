@@ -1,5 +1,5 @@
-import { objectToSnake } from "ts-case-convert";
-import { Uri, window, workspace } from "vscode";
+import { objectToCamel, objectToSnake } from "ts-case-convert";
+import { Uri, window, workspace, WorkspaceConfiguration } from "vscode";
 import { ExecuteCommandRequest } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/node";
 
@@ -39,14 +39,6 @@ export const format = (client: LanguageClient) => async (): Promise<void> => {
 };
 
 export const syncSettings = async (): Promise<void> => {
-  // uroborosql-fmt の設定を取得
-  const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
-
-  // Default value of `uroborosql-fmt.configurationFilePath` is "".
-  const vsCodeConfigPath: string = vsCodeConfig.get("configurationFilePath");
-  const configFilePath =
-    vsCodeConfigPath !== "" ? vsCodeConfigPath : ".uroborosqlfmtrc.json";
-
   // VSCodeで開いているディレクトリを取得
   // 開いていない場合はエラーを出して終了
   const folders = workspace.workspaceFolders;
@@ -56,8 +48,6 @@ export const syncSettings = async (): Promise<void> => {
     );
     return;
   }
-  const folderPath = folders[0].uri;
-  const configFileFullPath = Uri.joinPath(folderPath, configFilePath);
 
   // 設定ファイルのURIを作成
   const configFile = Uri.joinPath(folders[0].uri, getConfigFileName());
@@ -91,5 +81,57 @@ export const syncSettings = async (): Promise<void> => {
   const content = JSON.stringify(merged, null, 2);
 
   const blob: Uint8Array = Buffer.from(content);
-  await workspace.fs.writeFile(configFileFullPath, blob);
+  await workspace.fs.writeFile(configFile, blob);
+};
+
+// uroborosqlfmtrc.json の設定を settings.json に反映
+export const importSettings = async (): Promise<void> => {
+  // VSCodeで開いているディレクトリを取得
+  // 開いていない場合はエラーを出して終了
+  const folders = workspace.workspaceFolders;
+  if (folders === undefined) {
+    window.showErrorMessage(
+      "Error: Open the folder before executing this command.",
+    );
+    return;
+  }
+
+  // 設定ファイルのURIを作成
+  const configUri = Uri.joinPath(folders[0].uri, getConfigFileName());
+
+  if (!(await isFileExists(configUri))) {
+    window.showErrorMessage(
+      `Error: Config File of uroborosql-fmt is not found: ${configUri.path}`,
+    );
+    return;
+  }
+
+  const blob = await workspace.fs.readFile(configUri);
+  const config: OptionsRecord = JSON.parse(blob.toString());
+
+  // uroborosql-fmt の設定を取得
+  const vsCodeConfig: WorkspaceConfiguration =
+    workspace.getConfiguration("uroborosql-fmt");
+  // 設定値 `configurationFilePath` の除外・ value が null のエントリを除外・ WorkSpaceConfiguration が持つメソッドと内部オブジェクトを除外
+  const nonNullOptions: OptionsRecord = Object.fromEntries(
+    Object.entries(vsCodeConfig).filter(
+      ([key, value]) =>
+        key !== "configurationFilePath" &&
+        value !== null &&
+        typeof value !== "function" &&
+        typeof value !== "object",
+    ),
+  );
+
+  // ワークスペース側で設定されている内容（`configurationFilePath` 以外）をすべてundefinedにする
+  // - undefined を設定する場合： settings.json の該当項目が削除される
+  // - null を設定する場合： settings.json の該当項目の値として明示的にnullが設定される
+  for (const key of Object.keys(nonNullOptions)) {
+    await vsCodeConfig.update(key, undefined);
+  }
+
+  // format config の値で更新する
+  for (const [key, value] of Object.entries(objectToCamel(config))) {
+    await vsCodeConfig.update(key, value);
+  }
 };

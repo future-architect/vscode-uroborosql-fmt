@@ -16,7 +16,7 @@ import {
   TransportKind,
 } from "vscode-languageclient/node";
 
-import { format, syncSettings } from "./command";
+import { format, importSettings, syncSettings } from "./command";
 
 let client: LanguageClient;
 
@@ -74,6 +74,18 @@ export function activate(context: ExtensionContext) {
       "uroborosql-fmt.sync-config-file-with-extension-config",
       syncSettings,
     ),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.export",
+      // 現状はsyncと同じ挙動
+      syncSettings,
+    ),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand("uroborosql-fmt.import", importSettings),
   );
 
   // ステータスバーの作成と表示
