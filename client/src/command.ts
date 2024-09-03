@@ -101,7 +101,7 @@ export const importSettings = async (): Promise<void> => {
 
   if (!(await isFileExists(configUri))) {
     window.showErrorMessage(
-      `Error: Config File of uroborosql-fmt is not found: ${configUri.path}`,
+      `Error: Config File is not found: ${configUri.path}`,
     );
     return;
   }
@@ -123,11 +123,9 @@ export const importSettings = async (): Promise<void> => {
     ),
   );
 
-  // ワークスペース側で設定されている内容（`configurationFilePath` 以外）をすべてundefinedにする
-  // - undefined を設定する場合： settings.json の該当項目が削除される
-  // - null を設定する場合： settings.json の該当項目の値として明示的にnullが設定される
+  // ワークスペース側で設定されている設定項目（そのうち `configurationFilePath` 以外のもの）をすべて null にする
   for (const key of Object.keys(nonNullOptions)) {
-    await vsCodeConfig.update(key, undefined);
+    await vsCodeConfig.update(key, null);
   }
 
   // format config の値で更新する
