@@ -30,7 +30,7 @@
     "commands": [
       {
         "command": "uroborosql-fmt.uroborosql-format",
-        "title": "format sql"
+        "title": "Format SQL"
       },
       {
         "command": "uroborosql-fmt.import-to-global",
