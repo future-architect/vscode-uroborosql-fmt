@@ -71,7 +71,7 @@ export const exportSettings = async (): Promise<void> => {
   // 設定ファイルのURIを作成
   const configFile = Uri.joinPath(folders[0].uri, getConfigFileName());
 
-  // uroborosql-fmt の設定を取得
+  // VSCode拡張側の設定を取得
   const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
   const formattingConfig =
     convertWorkspaceConfigToFormattingConfig(vsCodeConfig);
@@ -82,10 +82,11 @@ export const exportSettings = async (): Promise<void> => {
     const file = await workspace.fs.readFile(configFile);
     existingConfig = JSON.parse(file.toString());
   } else {
+    // ファイルが存在しなければ設定値なし
     existingConfig = {};
   }
 
-  // 明示的に設定したものだけを上書きする
+  // VSCode 側で明示的に設定したものだけを上書きする
   const merged = {
     ...existingConfig,
     ...objectToSnake(formattingConfig),
@@ -121,16 +122,17 @@ export const importSettings = async (): Promise<void> => {
   const blob = await workspace.fs.readFile(configUri);
   const config: OptionsRecord = JSON.parse(blob.toString());
 
-  // uroborosql-fmt の設定を取得
+  // VSCode 拡張の設定を取得
   const vsCodeConfig: WorkspaceConfiguration =
     workspace.getConfiguration("uroborosql-fmt");
     
   // ワークスペース側で設定されている設定項目（そのうち `configurationFilePath` 以外のもの）をすべて null にする
+  const nonNullOptions = convertWorkspaceConfigToFormattingConfig(vsCodeConfig);
   for (const key of Object.keys(nonNullOptions)) {
     await vsCodeConfig.update(key, null);
   }
 
-  // format config の値で更新する
+  // 設定ファイルの値で更新する
   for (const [key, value] of Object.entries(objectToCamel(config))) {
     await vsCodeConfig.update(key, value);
   }
