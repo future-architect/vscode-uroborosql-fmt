@@ -125,7 +125,7 @@ export const importSettings = async (): Promise<void> => {
   // VSCode 拡張の設定を取得
   const vsCodeConfig: WorkspaceConfiguration =
     workspace.getConfiguration("uroborosql-fmt");
-    
+
   // ワークスペース側で設定されている設定項目（そのうち `configurationFilePath` 以外のもの）をすべて null にする
   const nonNullOptions = convertWorkspaceConfigToFormattingConfig(vsCodeConfig);
   for (const key of Object.keys(nonNullOptions)) {
