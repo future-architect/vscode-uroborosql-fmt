@@ -7,6 +7,7 @@ import {
   StatusBarAlignment,
   ThemeColor,
   StatusBarItem,
+  ConfigurationTarget,
 } from "vscode";
 
 import {
@@ -74,7 +75,17 @@ export function activate(context: ExtensionContext) {
   );
 
   context.subscriptions.push(
-    commands.registerCommand("uroborosql-fmt.import", importSettings),
+    commands.registerCommand(
+      "uroborosql-fmt.import-to-global",
+      importSettings(ConfigurationTarget.Global),
+    ),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.import-to-workspace",
+      importSettings(ConfigurationTarget.Workspace),
+    ),
   );
 
   // ステータスバーの作成と表示

@@ -33,7 +33,11 @@
         "title": "format sql"
       },
       {
-        "command": "uroborosql-fmt.import",
+        "command": "uroborosql-fmt.import-to-global",
+        "title": "Import uroborosql-fmt config file config to global config"
+      },
+      {
+        "command": "uroborosql-fmt.import-to-workspace",
         "title": "Import uroborosql-fmt config file config to workspace config"
       },
       {

@@ -1,5 +1,11 @@
 import { objectToCamel, objectToSnake } from "ts-case-convert";
-import { Uri, window, workspace, WorkspaceConfiguration } from "vscode";
+import {
+  ConfigurationTarget,
+  Uri,
+  window,
+  workspace,
+  WorkspaceConfiguration,
+} from "vscode";
 import { ExecuteCommandRequest } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/node";
 
@@ -98,42 +104,44 @@ export const exportSettings = async (): Promise<void> => {
 };
 
 // uroborosqlfmtrc.json の設定を settings.json に反映
-export const importSettings = async (): Promise<void> => {
-  // VSCodeで開いているディレクトリを取得
-  // 開いていない場合はエラーを出して終了
-  const folders = workspace.workspaceFolders;
-  if (folders === undefined) {
-    window.showErrorMessage(
-      "Error: Open the folder before executing this command.",
-    );
-    return;
-  }
+export const importSettings =
+  (target: ConfigurationTarget) => async (): Promise<void> => {
+    // VSCodeで開いているディレクトリを取得
+    // 開いていない場合はエラーを出して終了
+    const folders = workspace.workspaceFolders;
+    if (folders === undefined) {
+      window.showErrorMessage(
+        "Error: Open the folder before executing this command.",
+      );
+      return;
+    }
 
-  // 設定ファイルのURIを作成
-  const configUri = Uri.joinPath(folders[0].uri, getConfigFileName());
+    // 設定ファイルのURIを作成
+    const configUri = Uri.joinPath(folders[0].uri, getConfigFileName());
 
-  if (!(await isFileExists(configUri))) {
-    window.showErrorMessage(
-      `Error: Config File is not found: ${configUri.path}`,
-    );
-    return;
-  }
+    if (!(await isFileExists(configUri))) {
+      window.showErrorMessage(
+        `Error: Config File is not found: ${configUri.path}`,
+      );
+      return;
+    }
 
-  const blob = await workspace.fs.readFile(configUri);
-  const config: OptionsRecord = JSON.parse(blob.toString());
+    const blob = await workspace.fs.readFile(configUri);
+    const config: OptionsRecord = JSON.parse(blob.toString());
 
-  // VSCode 拡張の設定を取得
-  const vsCodeConfig: WorkspaceConfiguration =
-    workspace.getConfiguration("uroborosql-fmt");
+    // VSCode 拡張の設定を取得
+    const vsCodeConfig: WorkspaceConfiguration =
+      workspace.getConfiguration("uroborosql-fmt");
 
-  // ワークスペース側で設定されている設定項目（そのうち `configurationFilePath` 以外のもの）をすべて null にする
-  const nonNullOptions = convertWorkspaceConfigToFormattingConfig(vsCodeConfig);
-  for (const key of Object.keys(nonNullOptions)) {
-    await vsCodeConfig.update(key, null);
-  }
+    // ワークスペース側で設定されている設定項目（そのうち `configurationFilePath` 以外のもの）をすべて null にする
+    const nonNullOptions =
+      convertWorkspaceConfigToFormattingConfig(vsCodeConfig);
+    for (const key of Object.keys(nonNullOptions)) {
+      await vsCodeConfig.update(key, null, target);
+    }
 
-  // 設定ファイルの値で更新する
-  for (const [key, value] of Object.entries(objectToCamel(config))) {
-    await vsCodeConfig.update(key, value);
-  }
-};
+    // 設定ファイルの値で更新する
+    for (const [key, value] of Object.entries(objectToCamel(config))) {
+      await vsCodeConfig.update(key, value, target);
+    }
+  };
