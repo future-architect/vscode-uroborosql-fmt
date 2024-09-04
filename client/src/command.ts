@@ -5,6 +5,25 @@ import { LanguageClient } from "vscode-languageclient/node";
 
 type OptionsRecord = Record<string, boolean | number | string>;
 
+const convertWorkspaceConfigToFormattingConfig = (
+  workspaceConfig: WorkspaceConfiguration,
+): OptionsRecord => {
+  // WorkspaceConfiguration のメンバから以下を除外
+  // - 設定値 `configurationFilePath`
+  // - value が null のメンバ
+  // - その他メソッドと内部オブジェクト
+  const formattingConfig: OptionsRecord = Object.fromEntries(
+    Object.entries(workspaceConfig).filter(
+      ([key, value]) =>
+        key !== "configurationFilePath" &&
+        value !== null &&
+        typeof value !== "function" &&
+        typeof value !== "object",
+    ),
+  );
+  return formattingConfig;
+};
+
 const isFileExists = async (uri: Uri): Promise<boolean> => {
   try {
     await workspace.fs.stat(uri);
@@ -54,17 +73,10 @@ export const exportSettings = async (): Promise<void> => {
 
   // uroborosql-fmt の設定を取得
   const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
-  // 設定値 `configurationFilePath` の除外・ value が null のエントリを除外・ WorkSpaceConfiguration が持つメソッドと内部オブジェクトを除外
-  const formattingConfig: OptionsRecord = Object.fromEntries(
-    Object.entries(vsCodeConfig).filter(
-      ([key, value]) =>
-        key !== "configurationFilePath" &&
-        value !== null &&
-        typeof value !== "function" &&
-        typeof value !== "object",
-    ),
-  );
+  const formattingConfig =
+    convertWorkspaceConfigToFormattingConfig(vsCodeConfig);
 
+  // 設定ファイルの設定を取得
   let existingConfig: OptionsRecord;
   if (await isFileExists(configFile)) {
     const file = await workspace.fs.readFile(configFile);
@@ -112,17 +124,7 @@ export const importSettings = async (): Promise<void> => {
   // uroborosql-fmt の設定を取得
   const vsCodeConfig: WorkspaceConfiguration =
     workspace.getConfiguration("uroborosql-fmt");
-  // 設定値 `configurationFilePath` の除外・ value が null のエントリを除外・ WorkSpaceConfiguration が持つメソッドと内部オブジェクトを除外
-  const nonNullOptions: OptionsRecord = Object.fromEntries(
-    Object.entries(vsCodeConfig).filter(
-      ([key, value]) =>
-        key !== "configurationFilePath" &&
-        value !== null &&
-        typeof value !== "function" &&
-        typeof value !== "object",
-    ),
-  );
-
+    
   // ワークスペース側で設定されている設定項目（そのうち `configurationFilePath` 以外のもの）をすべて null にする
   for (const key of Object.keys(nonNullOptions)) {
     await vsCodeConfig.update(key, null);
