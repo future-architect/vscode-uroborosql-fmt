@@ -34,7 +34,7 @@
       },
       {
         "command": "uroborosql-fmt.import",
-        "title": "Import uroborosql-fmt config to workspace"
+        "title": "Import uroborosql-fmt config file config to workspace config"
       },
       {
         "command": "uroborosql-fmt.export",
