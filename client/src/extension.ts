@@ -17,7 +17,11 @@ import {
   TransportKind,
 } from "vscode-languageclient/node";
 
-import { exportSettings, format, importSettings } from "./command";
+import {
+  buildFormatFunction,
+  exportSettings,
+  buildImportSettingsFunction,
+} from "./command";
 
 let client: LanguageClient;
 
@@ -66,7 +70,7 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.uroborosql-format",
-      format(client),
+      buildFormatFunction(client),
     ),
   );
 
@@ -77,14 +81,14 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.import-to-global",
-      importSettings(ConfigurationTarget.Global),
+      buildImportSettingsFunction(ConfigurationTarget.Global),
     ),
   );
 
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.import-to-workspace",
-      importSettings(ConfigurationTarget.Workspace),
+      buildImportSettingsFunction(ConfigurationTarget.Workspace),
     ),
   );
 

@@ -52,16 +52,17 @@ const getConfigFileName = (
   return vsCodeConfigPath !== "" ? vsCodeConfigPath : defaultName;
 };
 
-export const format = (client: LanguageClient) => async (): Promise<void> => {
-  const uri = window.activeTextEditor.document.uri;
-  const version = window.activeTextEditor.document.version;
-  const selections = window.activeTextEditor.selections;
+export const buildFormatFunction =
+  (client: LanguageClient) => async (): Promise<void> => {
+    const uri = window.activeTextEditor.document.uri;
+    const version = window.activeTextEditor.document.version;
+    const selections = window.activeTextEditor.selections;
 
-  await client.sendRequest(ExecuteCommandRequest.type, {
-    command: "uroborosql-fmt.executeFormat",
-    arguments: [uri, version, selections],
-  });
-};
+    await client.sendRequest(ExecuteCommandRequest.type, {
+      command: "uroborosql-fmt.executeFormat",
+      arguments: [uri, version, selections],
+    });
+  };
 
 export const exportSettings = async (): Promise<void> => {
   // VSCodeで開いているディレクトリを取得
@@ -104,7 +105,7 @@ export const exportSettings = async (): Promise<void> => {
 };
 
 // uroborosqlfmtrc.json の設定を settings.json に反映
-export const importSettings =
+export const buildImportSettingsFunction =
   (target: ConfigurationTarget) => async (): Promise<void> => {
     // VSCodeで開いているディレクトリを取得
     // 開いていない場合はエラーを出して終了
