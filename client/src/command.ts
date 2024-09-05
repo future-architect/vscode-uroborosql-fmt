@@ -65,7 +65,7 @@ const getTargetFolder = (
       // activeTextEditorが存在しない場合
       return;
     }
-    const activeEditorPath = window.activeTextEditor.document.uri.path;
+    const activeEditorPath = window.activeTextEditor.document.uri.fsPath;
 
     const matchingWorkspace = workspace.workspaceFolders?.find((wsFolder) => {
       const relative = path.relative(wsFolder.uri.fsPath, activeEditorPath);
