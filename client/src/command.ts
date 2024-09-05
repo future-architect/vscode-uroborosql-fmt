@@ -65,12 +65,17 @@ export const buildFormatFunction =
   };
 
 export const exportSettings = async (): Promise<void> => {
-  // VSCodeで開いているディレクトリを取得
-  // 開いていない場合はエラーを出して終了
   const folders = workspace.workspaceFolders;
   if (folders === undefined) {
+    // ワークスペースとしてではなく、ファイルを直接開いている場合
     window.showErrorMessage(
-      "Error: Open the folder before executing this command.",
+      "Error: Open the folder before executing commands.",
+    );
+    return;
+  } else if (folders.length == 0) {
+    // ワークスペースにフォルダが一つも存在しない場合
+    window.showErrorMessage(
+      "Error: There is no folder in the workspace. To execute the command, at least one folder must be added to the workspace.",
     );
     return;
   }
@@ -107,12 +112,17 @@ export const exportSettings = async (): Promise<void> => {
 // uroborosqlfmtrc.json の設定を settings.json に反映
 export const buildImportSettingsFunction =
   (target: ConfigurationTarget) => async (): Promise<void> => {
-    // VSCodeで開いているディレクトリを取得
-    // 開いていない場合はエラーを出して終了
     const folders = workspace.workspaceFolders;
     if (folders === undefined) {
+      // ワークスペースとしてではなく、ファイルを直接開いている場合
       window.showErrorMessage(
-        "Error: Open the folder before executing this command.",
+        "Error: Open the folder before executing commands.",
+      );
+      return;
+    } else if (folders.length == 0) {
+      // ワークスペースにフォルダが一つも存在しない場合
+      window.showErrorMessage(
+        "Error: There is no folder in the workspace. To execute the command, at least one folder must be added to the workspace.",
       );
       return;
     }
