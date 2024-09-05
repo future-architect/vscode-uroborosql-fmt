@@ -1,3 +1,4 @@
+import path = require("path");
 import { objectToCamel, objectToSnake } from "ts-case-convert";
 import {
   ConfigurationTarget,
@@ -5,6 +6,7 @@ import {
   window,
   workspace,
   WorkspaceConfiguration,
+  WorkspaceFolder,
 } from "vscode";
 import { ExecuteCommandRequest } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/node";
@@ -52,6 +54,31 @@ const getConfigFileName = (
   return vsCodeConfigPath !== "" ? vsCodeConfigPath : defaultName;
 };
 
+const getTargetFolder = (
+  folders: readonly WorkspaceFolder[],
+): WorkspaceFolder | undefined => {
+  if (folders.length === 1) {
+    return folders[0];
+  } else if (folders.length > 1) {
+    // ワークスペースに複数のフォルダが存在する場合
+    if (!window.activeTextEditor) {
+      // activeTextEditorが存在しない場合
+      return;
+    }
+    const activeEditorPath = window.activeTextEditor.document.uri.path;
+
+    const matchingWorkspace = workspace.workspaceFolders?.find((wsFolder) => {
+      const relative = path.relative(wsFolder.uri.fsPath, activeEditorPath);
+      return (
+        relative && !relative.startsWith("..") && !path.isAbsolute(relative)
+      );
+    });
+
+    return matchingWorkspace;
+  }
+  return;
+};
+
 export const buildFormatFunction =
   (client: LanguageClient) => async (): Promise<void> => {
     const uri = window.activeTextEditor.document.uri;
@@ -72,7 +99,7 @@ export const exportSettings = async (): Promise<void> => {
       "Error: Open the folder before executing commands.",
     );
     return;
-  } else if (folders.length == 0) {
+  } else if (folders.length === 0) {
     // ワークスペースにフォルダが一つも存在しない場合
     window.showErrorMessage(
       "Error: There is no folder in the workspace. To execute the command, at least one folder must be added to the workspace.",
@@ -80,8 +107,16 @@ export const exportSettings = async (): Promise<void> => {
     return;
   }
 
+  const folder = getTargetFolder(folders);
+  if (!folder) {
+    window.showErrorMessage(
+      "Error: There are multiple folders in the workspace, and it could not be determined which folder's settings to target. Please select a file that belongs to the folder you want to target before executing the command.",
+    );
+    return;
+  }
+
   // 設定ファイルのURIを作成
-  const configFile = Uri.joinPath(folders[0].uri, getConfigFileName());
+  const configFile = Uri.joinPath(folder.uri, getConfigFileName());
 
   // VSCode拡張側の設定を取得
   const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
