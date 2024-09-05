@@ -1,5 +1,6 @@
 import path = require("path");
 import { objectToCamel, objectToSnake } from "ts-case-convert";
+import type { ObjectToSnake } from "ts-case-convert/lib/caseConvert";
 import {
   ConfigurationTarget,
   Uri,
@@ -47,12 +48,12 @@ type ConfigurationRecord = {
   unifyNotEqual: boolean | null | undefined;
 };
 
-// workspaceConfigurationを受け取り、フォーマッタで利用する設定のみのRecordにして返す
+// WorkspaceConfigurationを受け取り、フォーマッタで利用する設定のみのRecordにして返す
 const extractFormattingConfigurations = (
   workspaceConfig: WorkspaceConfiguration,
 ): Partial<ConfigurationRecord> => {
   // translate null (that means unsupecified option) to undefined
-  const config = {} as Partial<ConfigurationRecord>;
+  const config: Partial<ConfigurationRecord> = {};
   for (const key of Object.keys(vsCodeConfigurationsObject)) {
     const value = workspaceConfig.get(key);
     if (value != null) {
@@ -195,17 +196,25 @@ export const buildImportSettingsFunction =
       return;
     }
 
-    // 設定ファイルのURIを作成
-    const configUri = Uri.joinPath(folders[0].uri, getConfigFileName());
-
-    if (!(await isFileExists(configUri))) {
+    const folder = getTargetFolder(folders);
+    if (!folder) {
       window.showErrorMessage(
-        `Error: Config File is not found: ${configUri.path}`,
+        "Error: There are multiple folders in the workspace, and it could not be determined which folder's settings to target. Please select a file that belongs to the folder you want to target before executing the command.",
       );
       return;
     }
 
-    const blob = await workspace.fs.readFile(configUri);
+    // 設定ファイルのURIを作成
+    const configFile = Uri.joinPath(folder.uri, getConfigFileName());
+
+    if (!(await isFileExists(configFile))) {
+      window.showErrorMessage(
+        `Error: Config File is not found: ${configFile.path}`,
+      );
+      return;
+    }
+
+    const blob = await workspace.fs.readFile(configFile);
     const config: ObjectToSnake<ConfigurationRecord> = JSON.parse(
       blob.toString(),
     );
