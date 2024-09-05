@@ -11,25 +11,59 @@ import {
 import { ExecuteCommandRequest } from "vscode-languageclient";
 import { LanguageClient } from "vscode-languageclient/node";
 
-type OptionsRecord = Record<string, boolean | number | string>;
+const vsCodeConfigurationsObject = {
+  configurationFilePath: "",
+  debug: null,
+  tabSize: null,
+  complementAlias: null,
+  trimBindParam: null,
+  keywordCase: null,
+  identifierCase: null,
+  maxCharPerLine: null,
+  complementOuterKeyword: null,
+  complementColumnAsKeyword: null,
+  removeTableAsKeyword: null,
+  removeRedundantNest: null,
+  complementSqlId: null,
+  convertDoubleColonCast: null,
+  unifyNotEqual: null,
+} satisfies ConfigurationRecord;
 
-const convertWorkspaceConfigToFormattingConfig = (
+type ConfigurationRecord = {
+  configurationFilePath: string;
+  debug: boolean | null | undefined;
+  tabSize: number | null | undefined;
+  complementAlias: boolean | null | undefined;
+  trimBindParam: boolean | null | undefined;
+  keywordCase: string | null | undefined;
+  identifierCase: string | null | undefined;
+  maxCharPerLine: number | null | undefined;
+  complementOuterKeyword: boolean | null | undefined;
+  complementColumnAsKeyword: boolean | null | undefined;
+  removeTableAsKeyword: boolean | null | undefined;
+  removeRedundantNest: boolean | null | undefined;
+  complementSqlId: boolean | null | undefined;
+  convertDoubleColonCast: boolean | null | undefined;
+  unifyNotEqual: boolean | null | undefined;
+};
+
+// workspaceConfigurationを受け取り、フォーマッタで利用する設定のみのRecordにして返す
+const extractFormattingConfigurations = (
   workspaceConfig: WorkspaceConfiguration,
-): OptionsRecord => {
-  // WorkspaceConfiguration のメンバから以下を除外
-  // - 設定値 `configurationFilePath`
-  // - value が null のメンバ
-  // - その他メソッドと内部オブジェクト
-  const formattingConfig: OptionsRecord = Object.fromEntries(
-    Object.entries(workspaceConfig).filter(
-      ([key, value]) =>
-        key !== "configurationFilePath" &&
-        value !== null &&
-        typeof value !== "function" &&
-        typeof value !== "object",
-    ),
-  );
-  return formattingConfig;
+): Partial<ConfigurationRecord> => {
+  // translate null (that means unsupecified option) to undefined
+  const config = {} as Partial<ConfigurationRecord>;
+  for (const key of Object.keys(vsCodeConfigurationsObject)) {
+    const value = workspaceConfig.get(key);
+    if (value != null) {
+      config[key] = value;
+    }
+  }
+  // remove configurationFilePath
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { configurationFilePath, ...restConfiguration } = config;
+
+  return restConfiguration;
 };
 
 const isFileExists = async (uri: Uri): Promise<boolean> => {
@@ -120,11 +154,10 @@ export const exportSettings = async (): Promise<void> => {
 
   // VSCode拡張側の設定を取得
   const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
-  const formattingConfig =
-    convertWorkspaceConfigToFormattingConfig(vsCodeConfig);
+  const formattingConfig = extractFormattingConfigurations(vsCodeConfig);
 
   // 設定ファイルの設定を取得
-  let existingConfig: OptionsRecord;
+  let existingConfig: ObjectToSnake<Partial<ConfigurationRecord>>;
   if (await isFileExists(configFile)) {
     const file = await workspace.fs.readFile(configFile);
     existingConfig = JSON.parse(file.toString());
@@ -173,21 +206,26 @@ export const buildImportSettingsFunction =
     }
 
     const blob = await workspace.fs.readFile(configUri);
-    const config: OptionsRecord = JSON.parse(blob.toString());
+    const config: ObjectToSnake<ConfigurationRecord> = JSON.parse(
+      blob.toString(),
+    );
 
     // VSCode 拡張の設定を取得
     const vsCodeConfig: WorkspaceConfiguration =
       workspace.getConfiguration("uroborosql-fmt");
 
     // ワークスペース側で設定されている設定項目（そのうち `configurationFilePath` 以外のもの）をすべて null にする
-    const nonNullOptions =
-      convertWorkspaceConfigToFormattingConfig(vsCodeConfig);
-    for (const key of Object.keys(nonNullOptions)) {
-      await vsCodeConfig.update(key, null, target);
-    }
+    const vsCodeOptions = extractFormattingConfigurations(vsCodeConfig);
+    await Promise.all(
+      Object.keys(vsCodeOptions).map((key) =>
+        vsCodeConfig.update(key, null, target),
+      ),
+    );
 
     // 設定ファイルの値で更新する
-    for (const [key, value] of Object.entries(objectToCamel(config))) {
-      await vsCodeConfig.update(key, value, target);
-    }
+    await Promise.all(
+      Object.entries(objectToCamel(config)).map(([key, value]) =>
+        vsCodeConfig.update(key, value, target),
+      ),
+    );
   };
