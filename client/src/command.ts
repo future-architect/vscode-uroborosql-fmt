@@ -52,7 +52,7 @@ type ConfigurationRecord = {
 const extractFormattingConfigurations = (
   workspaceConfig: WorkspaceConfiguration,
 ): Partial<ConfigurationRecord> => {
-  // translate null (that means unsupecified option) to undefined
+  // uroborosql-fmtのVSCode拡張で有効な設定項目のうち、明示的に設定されているもののみを取得
   const config: Partial<ConfigurationRecord> = {};
   for (const key of Object.keys(vsCodeConfigurationsObject)) {
     const value = workspaceConfig.get(key);
@@ -60,7 +60,7 @@ const extractFormattingConfigurations = (
       config[key] = value;
     }
   }
-  // remove configurationFilePath
+  // configurationFilePath を除外
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { configurationFilePath, ...restConfiguration } = config;
 
@@ -89,28 +89,46 @@ const getConfigFileName = (
   return vsCodeConfigPath !== "" ? vsCodeConfigPath : defaultName;
 };
 
-const getTargetFolder = (
-  folders: readonly WorkspaceFolder[],
-): WorkspaceFolder | undefined => {
+const getTargetFolder = (): WorkspaceFolder | undefined => {
+  const folders = workspace.workspaceFolders;
+  if (folders === undefined) {
+    // ワークスペースとしてではなく、ファイルを直接開いている場合
+    window.showErrorMessage(
+      "Error: Open the folder before executing commands.",
+    );
+    return;
+  } else if (folders.length == 0) {
+    // ワークスペースにフォルダが一つも存在しない場合
+    window.showErrorMessage(
+      "Error: There is no folder in the workspace. To execute the command, at least one folder must be added to the workspace.",
+    );
+    return;
+  }
   if (folders.length === 1) {
     return folders[0];
-  } else if (folders.length > 1) {
-    // ワークスペースに複数のフォルダが存在する場合
-    if (!window.activeTextEditor) {
-      // activeTextEditorが存在しない場合
-      return;
-    }
-    const activeEditorPath = window.activeTextEditor.document.uri.fsPath;
+  }
 
-    const matchingWorkspace = workspace.workspaceFolders?.find((wsFolder) => {
-      const relative = path.relative(wsFolder.uri.fsPath, activeEditorPath);
-      return (
-        relative && !relative.startsWith("..") && !path.isAbsolute(relative)
-      );
-    });
+  // ワークスペースに複数のフォルダが存在する場合
+  if (!window.activeTextEditor) {
+    // activeTextEditorが存在しない場合
+    return;
+  }
+  const activeEditorPath = window.activeTextEditor.document.uri.fsPath;
 
+  const matchingWorkspace = folders.find((wsFolder) => {
+    const relative = path.relative(wsFolder.uri.fsPath, activeEditorPath);
+    return (
+      relative && !relative.startsWith("..") && !path.isAbsolute(relative)
+    );
+  });
+
+  if(matchingWorkspace) {
     return matchingWorkspace;
   }
+
+  window.showErrorMessage(
+    "Error: There are multiple folders in the workspace, and it could not be determined which folder's settings to target. Please select a file that belongs to the folder you want to target before executing the command.",
+  );
   return;
 };
 
@@ -127,26 +145,8 @@ export const buildFormatFunction =
   };
 
 export const exportSettings = async (): Promise<void> => {
-  const folders = workspace.workspaceFolders;
-  if (folders === undefined) {
-    // ワークスペースとしてではなく、ファイルを直接開いている場合
-    window.showErrorMessage(
-      "Error: Open the folder before executing commands.",
-    );
-    return;
-  } else if (folders.length === 0) {
-    // ワークスペースにフォルダが一つも存在しない場合
-    window.showErrorMessage(
-      "Error: There is no folder in the workspace. To execute the command, at least one folder must be added to the workspace.",
-    );
-    return;
-  }
-
-  const folder = getTargetFolder(folders);
-  if (!folder) {
-    window.showErrorMessage(
-      "Error: There are multiple folders in the workspace, and it could not be determined which folder's settings to target. Please select a file that belongs to the folder you want to target before executing the command.",
-    );
+  const folder = getTargetFolder();
+  if(!folder) {
     return;
   }
 
@@ -181,26 +181,8 @@ export const exportSettings = async (): Promise<void> => {
 // uroborosqlfmtrc.json の設定を settings.json に反映
 export const buildImportSettingsFunction =
   (target: ConfigurationTarget) => async (): Promise<void> => {
-    const folders = workspace.workspaceFolders;
-    if (folders === undefined) {
-      // ワークスペースとしてではなく、ファイルを直接開いている場合
-      window.showErrorMessage(
-        "Error: Open the folder before executing commands.",
-      );
-      return;
-    } else if (folders.length == 0) {
-      // ワークスペースにフォルダが一つも存在しない場合
-      window.showErrorMessage(
-        "Error: There is no folder in the workspace. To execute the command, at least one folder must be added to the workspace.",
-      );
-      return;
-    }
-
-    const folder = getTargetFolder(folders);
-    if (!folder) {
-      window.showErrorMessage(
-        "Error: There are multiple folders in the workspace, and it could not be determined which folder's settings to target. Please select a file that belongs to the folder you want to target before executing the command.",
-      );
+    const folder = getTargetFolder();
+    if(!folder){
       return;
     }
 
