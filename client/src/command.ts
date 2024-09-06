@@ -117,12 +117,10 @@ const getTargetFolder = (): WorkspaceFolder | undefined => {
 
   const matchingWorkspace = folders.find((wsFolder) => {
     const relative = path.relative(wsFolder.uri.fsPath, activeEditorPath);
-    return (
-      relative && !relative.startsWith("..") && !path.isAbsolute(relative)
-    );
+    return relative && !relative.startsWith("..") && !path.isAbsolute(relative);
   });
 
-  if(matchingWorkspace) {
+  if (matchingWorkspace) {
     return matchingWorkspace;
   }
 
@@ -146,7 +144,7 @@ export const buildFormatFunction =
 
 export const exportSettings = async (): Promise<void> => {
   const folder = getTargetFolder();
-  if(!folder) {
+  if (!folder) {
     return;
   }
 
@@ -182,7 +180,7 @@ export const exportSettings = async (): Promise<void> => {
 export const buildImportSettingsFunction =
   (target: ConfigurationTarget) => async (): Promise<void> => {
     const folder = getTargetFolder();
-    if(!folder){
+    if (!folder) {
       return;
     }
 
