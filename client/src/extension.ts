@@ -7,6 +7,7 @@ import {
   StatusBarAlignment,
   ThemeColor,
   StatusBarItem,
+  ConfigurationTarget,
 } from "vscode";
 
 import {
@@ -14,8 +15,13 @@ import {
   LanguageClientOptions,
   ServerOptions,
   TransportKind,
-  ExecuteCommandRequest,
 } from "vscode-languageclient/node";
+
+import {
+  buildFormatFunction,
+  exportSettings,
+  buildImportSettingsFunction,
+} from "./command";
 
 let client: LanguageClient;
 
@@ -62,16 +68,28 @@ export function activate(context: ExtensionContext) {
   );
 
   context.subscriptions.push(
-    commands.registerCommand("uroborosql-fmt.uroborosql-format", async () => {
-      const uri = window.activeTextEditor.document.uri;
-      const version = window.activeTextEditor.document.version;
-      const selections = window.activeTextEditor.selections;
+    commands.registerCommand(
+      "uroborosql-fmt.uroborosql-format",
+      buildFormatFunction(client),
+    ),
+  );
 
-      await client.sendRequest(ExecuteCommandRequest.type, {
-        command: "uroborosql-fmt.executeFormat",
-        arguments: [uri, version, selections],
-      });
-    }),
+  context.subscriptions.push(
+    commands.registerCommand("uroborosql-fmt.export", exportSettings),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.import-to-global",
+      buildImportSettingsFunction(ConfigurationTarget.Global),
+    ),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.import-to-workspace",
+      buildImportSettingsFunction(ConfigurationTarget.Workspace),
+    ),
   );
 
   // ステータスバーの作成と表示

@@ -30,7 +30,19 @@
     "commands": [
       {
         "command": "uroborosql-fmt.uroborosql-format",
-        "title": "format sql"
+        "title": "Format SQL"
+      },
+      {
+        "command": "uroborosql-fmt.import-to-global",
+        "title": "Import uroborosql-fmt config file config to global config"
+      },
+      {
+        "command": "uroborosql-fmt.import-to-workspace",
+        "title": "Import uroborosql-fmt config file config to workspace config"
+      },
+      {
+        "command": "uroborosql-fmt.export",
+        "title": "Export workspace config to uroborosql-fmt config file"
       }
     ],
     "configuration": {
@@ -38,7 +50,9 @@
       "properties": {
         "uroborosql-fmt.configurationFilePath": {
           "type": "string",
-          "description": "The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`. If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations."
+          "markdownDescription": "The path of configuration file. File extension must be `.json`.\n\n- If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`.\n- If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations.\n\nYou can use the commands listed below.\n- By executing `Import uroborosql-fmt config file config to workspace config` command, you can import formatter configurations into the workspace configuration.\n- By executing `Import uroborosql-fmt config file config to global config` command, you can import formatter configurations into the global configuration.\n- By executing `Export workspace config to uroborosql-fmt config file` command, you can export VSCode configurations to the formatter configuration file.",
+          "pattern": "^$|.+\\.json$",
+          "patternErrorMessage": "File extension must be `.json`."
         },
         "uroborosql-fmt.debug": {
           "type": [
