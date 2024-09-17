@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.1.0
+
+### Minor Changes
+
+- 5df3a5c: Improved to notify the status bar when formatting errors.
+- 8751506: Update uroborosql-fmt
+
+  - Support Unary operators
+  - Support arithmetic expressions in limit clause
+  - Fix consecutive comments at the end of with_clause parentheses
+  - Fix swapping positions of comma and comment
+  - Supprt filter clause
+  - Fix the vertical alignment of 2WaySQL
+  - Fix block comment alignment
+  - Handle comments after select_statement at the end of insert_statement
+  - Support comments after join keyword
+  - Handle block comments after recursive keyword
+  - support comments after opening parenthesis in IN expression
+  - Support comments after SET keyword
+  - Support comments before select_statement in insert_statement
+
+- ee4d6d4: Added setting options to apply options of urborosql-fmt.
+- f80e2b1: Added commands to import/export configurations.
+
 ## 1.0.11
 
 ### Patch Changes
