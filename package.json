@@ -245,6 +245,9 @@
     "download-uroborosql-fmt-napi": "node ./server/download-uroborosql-fmt-napi.mjs",
     "dummy-release": "node ./scripts/dummy-publish.mjs"
   },
+  "dependencies": {
+    "ts-case-convert": "^2.0.7"
+  },
   "devDependencies": {
     "@changesets/changelog-github": "^0.5.0",
     "@changesets/cli": "^2.26.2",
@@ -255,7 +258,6 @@
     "eslint": "^8.50.0",
     "mocha": "^10.2.0",
     "prettier": "~3.3.0",
-    "ts-case-convert": "^2.0.7",
     "typescript": "^5.2.2",
     "undici": "^6.0.0"
   }
