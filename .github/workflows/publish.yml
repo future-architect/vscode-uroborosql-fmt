@@ -37,7 +37,7 @@ jobs:
           #   platform: alpine
           #   arch: x64
           #   npm_config_arch: x64
-          - os: macos-latest
+          - os: macos-13
             platform: darwin
             arch: x64
             npm_config_arch: x64
