@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2
+
+### Patch Changes
+
+- d8541d0: Fixed formatting error on mac os (intel)
+
 ## 1.1.1
 
 ### Patch Changes
