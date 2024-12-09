@@ -21,7 +21,7 @@ import { runfmtWithSettings } from "uroborosql-fmt-napi";
 import * as fs from "fs";
 
 import { performance } from "perf_hooks";
-import path = require("path");
+import * as path from "path";
 import { URI } from "vscode-uri";
 import { objectToSnake } from "ts-case-convert";
 // Create a connection for the server, using Node's IPC as a transport.
