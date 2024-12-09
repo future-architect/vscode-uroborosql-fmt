@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+### Minor Changes
+
+- 69962a0: Add indentTab settings
+
 ## 1.1.2
 
 ### Patch Changes
