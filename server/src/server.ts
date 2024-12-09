@@ -104,6 +104,7 @@ type ConfigurationSettings = {
   complementSqlId: boolean | null | undefined;
   convertDoubleColonCast: boolean | null | undefined;
   unifyNotEqual: boolean | null | undefined;
+  indentTab: boolean | null | undefined;
 };
 
 function getSettings(resource: string): Thenable<ConfigurationSettings> {

@@ -54,7 +54,8 @@ You can enable format on save for SQL by having the following values in your set
   "remove_redundant_nest": true,
   "complement_sql_id": true,
   "convert_double_colon_cast": false,
-  "unify_not_equal": true
+  "unify_not_equal": true,
+  "indent_tab": true
 }
 ```
 
@@ -78,6 +79,7 @@ If there is no configuration file, the default values are used.
 | [`complement_sql_id`](https://github.com/future-architect/uroborosql-fmt/blob/main/docs/options/complement_sql_id.md)                       | bool                                 | Complement [SQL ID](https://palette-doc.rtfa.as/coding-standards/forSQL/SQL%E3%82%B3%E3%83%BC%E3%83%87%E3%82%A3%E3%83%B3%E3%82%B0%E8%A6%8F%E7%B4%84%EF%BC%88uroboroSQL%EF%BC%89.html#sql-%E8%AD%98%E5%88%A5%E5%AD%90).                                 | false   |
 | [`convert_double_colon_cast`](https://github.com/future-architect/uroborosql-fmt/blob/main/docs/options/convert_double_colon_cast.md)       | bool                                 | Convert casts by `X::type` to the form `CAST(X AS type)`.                                                                                                                                                                                              | true    |
 | [`unify_not_equal`](https://github.com/future-architect/uroborosql-fmt/blob/main/docs/options/unify_not_equal.md)                           | bool                                 | Convert comparison operator `<>` to `!=`                                                                                                                                                                                                               | true    |
+| [`indent_tab`](https://github.com/future-architect/uroborosql-fmt/blob/main/docs/options/indent_tab.md)                                     | bool                                 | Switch the indentation style between tabs and spaces.                                                                                                                                                                                                  | true    |
 
 ## Available Commands
 

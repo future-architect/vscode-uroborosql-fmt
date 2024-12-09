@@ -226,6 +226,19 @@
           ],
           "default": null,
           "markdownDescription": "Convert comparison operator `<>` to `!=`. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
+        },
+        "uroborosql-fmt.indentTab": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "enum": [
+            true,
+            false,
+            null
+          ],
+          "default": null,
+          "markdownDescription": "Switch the indentation style between tabs and spaces. If this value is null, uroborosql-fmt refers the configuration file or uses the default value."
         }
       }
     }
