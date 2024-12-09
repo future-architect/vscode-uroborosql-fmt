@@ -1,4 +1,4 @@
-import path = require("path");
+import * as path from "path";
 import { objectToCamel, objectToSnake } from "ts-case-convert";
 import type { ObjectToSnake } from "ts-case-convert/lib/caseConvert";
 import {
@@ -73,7 +73,7 @@ const isFileExists = async (uri: Uri): Promise<boolean> => {
   try {
     await workspace.fs.stat(uri);
     return true;
-  } catch (_) {
+  } catch {
     return false;
   }
 };

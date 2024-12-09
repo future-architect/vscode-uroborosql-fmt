@@ -266,12 +266,11 @@
     "@changesets/cli": "^2.26.2",
     "@types/mocha": "^10.0.2",
     "@types/node": "^22.0.0",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
-    "eslint": "^8.50.0",
+    "eslint": "^9.16.0",
     "mocha": "^11.0.0",
-    "prettier": "~3.4.0",
+    "prettier": "~3.4.2",
     "typescript": "^5.2.2",
+    "typescript-eslint": "^8.17.0",
     "undici": "^7.0.0"
   }
 }
