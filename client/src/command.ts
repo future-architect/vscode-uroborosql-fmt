@@ -28,6 +28,7 @@ const vsCodeConfigurationsObject = {
   complementSqlId: null,
   convertDoubleColonCast: null,
   unifyNotEqual: null,
+  indentTab: null,
 } satisfies ConfigurationRecord;
 
 type ConfigurationRecord = {
@@ -46,6 +47,7 @@ type ConfigurationRecord = {
   complementSqlId: boolean | null | undefined;
   convertDoubleColonCast: boolean | null | undefined;
   unifyNotEqual: boolean | null | undefined;
+  indentTab: boolean | null | undefined;
 };
 
 // WorkspaceConfigurationを受け取り、フォーマッタで利用する設定のみのRecordにして返す
