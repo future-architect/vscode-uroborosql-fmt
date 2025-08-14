@@ -29,6 +29,7 @@ const vsCodeConfigurationsObject = {
   convertDoubleColonCast: null,
   unifyNotEqual: null,
   indentTab: null,
+  useParserErrorRecovery: null,
 } satisfies ConfigurationRecord;
 
 type ConfigurationRecord = {
@@ -48,6 +49,7 @@ type ConfigurationRecord = {
   convertDoubleColonCast: boolean | null | undefined;
   unifyNotEqual: boolean | null | undefined;
   indentTab: boolean | null | undefined;
+  useParserErrorRecovery: boolean | null | undefined;
 };
 
 // WorkspaceConfigurationを受け取り、フォーマッタで利用する設定のみのRecordにして返す

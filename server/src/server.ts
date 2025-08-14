@@ -105,6 +105,7 @@ type ConfigurationSettings = {
   convertDoubleColonCast: boolean | null | undefined;
   unifyNotEqual: boolean | null | undefined;
   indentTab: boolean | null | undefined;
+  useParserErrorRecovery: boolean | null | undefined;
 };
 
 function getSettings(resource: string): Thenable<ConfigurationSettings> {
