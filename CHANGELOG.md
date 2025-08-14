@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.0
+
+### Major Changes
+
+- 718a5c3: Upgraded the internal formatter to v1.0.0, which features a new, rewritten parser. And a new `useParserErrorRecovery` option has been added.
+
 ## 1.2.0
 
 ### Minor Changes
