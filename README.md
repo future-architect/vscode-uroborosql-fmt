@@ -55,7 +55,8 @@ You can enable format on save for SQL by having the following values in your set
   "complement_sql_id": true,
   "convert_double_colon_cast": false,
   "unify_not_equal": true,
-  "indent_tab": true
+  "indent_tab": true,
+  "use_parser_error_recovery": true
 }
 ```
 
@@ -80,6 +81,7 @@ If there is no configuration file, the default values are used.
 | [`convert_double_colon_cast`](https://github.com/future-architect/uroborosql-fmt/blob/main/docs/options/convert_double_colon_cast.md)       | bool                                 | Convert casts by `X::type` to the form `CAST(X AS type)`.                                                                                                                                                                                              | true    |
 | [`unify_not_equal`](https://github.com/future-architect/uroborosql-fmt/blob/main/docs/options/unify_not_equal.md)                           | bool                                 | Convert comparison operator `<>` to `!=`                                                                                                                                                                                                               | true    |
 | [`indent_tab`](https://github.com/future-architect/uroborosql-fmt/blob/main/docs/options/indent_tab.md)                                     | bool                                 | Switch the indentation style between tabs and spaces.                                                                                                                                                                                                  | true    |
+| [`use_parser_error_recovery`](https://github.com/future-architect/uroborosql-fmt/blob/main/docs/options/use_parser_error_recovery.md)       | bool                                 | Enable error recovery in the SQL parser.                                                                                                                                                                                                               | true    |
 
 ## Available Commands
 
