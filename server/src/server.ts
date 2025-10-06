@@ -238,10 +238,12 @@ async function formatText(
   // settings specified by vscode ui
   const specifiedSettings = getVSCodeOptions(settings, workspaceFolder);
   const settingsString = specifiedSettings
-    ? JSON.stringify(specifiedSettings)
+    ? JSON.stringify(specifiedSettings, null, 2)
     : "{}";
-  console.log(settingsString);
   const changes: TextEdit[] = [];
+
+  console.log("VSCode uroborosql-fmt settings:", settingsString);
+  console.log("uroborosql-fmt settings path:", configPath?.toString());
 
   // 全ての選択範囲に対して実行
   for (const selection of selections) {
