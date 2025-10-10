@@ -242,8 +242,8 @@ async function formatText(
     : "{}";
   const changes: TextEdit[] = [];
 
-  console.log("VSCode uroborosql-fmt settings:", settingsString);
-  console.log("uroborosql-fmt settings path:", configPath?.toString());
+  console.log("VSCode settings:", settingsString);
+  console.log("settings path:", configPath?.toString());
 
   // 全ての選択範囲に対して実行
   for (const selection of selections) {
