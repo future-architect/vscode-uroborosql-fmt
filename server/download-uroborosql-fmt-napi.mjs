@@ -12,10 +12,10 @@ main();
 async function main() {
   const agent = autoProxyAgent();
   const res = await fetch(
-    "https://future-architect.github.io/uroborosql-fmt/uroborosql-fmt-napi-1.0.0.tgz",
+    "https://future-architect.github.io/uroborosql-fmt/uroborosql-fmt-napi-1.0.1.tgz",
     agent ? { dispatcher: agent } : undefined,
   );
-  const destination = join(__dirname, "uroborosql-fmt-napi-1.0.0.tgz");
+  const destination = join(__dirname, "uroborosql-fmt-napi-1.0.1.tgz");
   writeFileSync(destination, Buffer.from(await res.arrayBuffer()));
 
   cp.execSync(`npm install ${destination}`, { cwd: __dirname });
