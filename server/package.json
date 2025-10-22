@@ -10,7 +10,7 @@
   },
   "repository": {},
   "dependencies": {
-    "uroborosql-fmt-napi": "file:uroborosql-fmt-napi-1.0.0.tgz",
+    "uroborosql-fmt-napi": "file:uroborosql-fmt-napi-1.0.1.tgz",
     "vscode-languageserver": "^9.0.0",
     "vscode-languageserver-textdocument": "^1.0.4",
     "vscode-uri": "^3.0.7"
