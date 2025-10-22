@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.1
+
+### Patch Changes
+
+- 6a2280b: Modify server log message
+- 9e8377d: Update uroborosql-fmt
+
+  - Support ORDER BY COLLATE
+  - Fix incorrect case conversion of comments in WHERE clause
+  - Support replacement parameter immediately after JOIN keyword
+  - Support ILIKE
+
 ## 2.0.0
 
 ### Major Changes
