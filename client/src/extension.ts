@@ -11,6 +11,7 @@ import {
 } from "vscode";
 
 import {
+  Executable,
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
@@ -27,23 +28,25 @@ let client: LanguageClient;
 
 //拡張機能を立ち上げたときに呼び出す関数
 export function activate(context: ExtensionContext) {
-  // The server is implemented in node
-  const serverModule = context.asAbsolutePath(
+  const serverEntry = context.asAbsolutePath(
     path.join("server", "out", "server.js"),
   );
-  // The debug options for the server
-  // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-  const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
 
-  // If the extension is launched in debug mode then the debug server options are used
-  // Otherwise the run options are used
+  const runExecutable: Executable = {
+    command: process.execPath,
+    args: [serverEntry],
+    transport: TransportKind.stdio,
+  };
+
+  const debugExecutable: Executable = {
+    command: process.execPath,
+    args: ["--nolazy", "--inspect=6009", serverEntry],
+    transport: TransportKind.stdio,
+  };
+
   const serverOptions: ServerOptions = {
-    run: { module: serverModule, transport: TransportKind.ipc },
-    debug: {
-      module: serverModule,
-      transport: TransportKind.ipc,
-      options: debugOptions,
-    },
+    run: runExecutable,
+    debug: debugExecutable,
   };
 
   // 対象とする言語。今回はplaintext
