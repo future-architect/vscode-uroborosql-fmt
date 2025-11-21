@@ -1,6 +1,5 @@
 import * as path from "path";
 import {
-  workspace,
   ExtensionContext,
   window,
   commands,
@@ -11,7 +10,6 @@ import {
 } from "vscode";
 
 import {
-  Executable,
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
@@ -28,38 +26,17 @@ let client: LanguageClient;
 
 //拡張機能を立ち上げたときに呼び出す関数
 export function activate(context: ExtensionContext) {
-  const serverEntry = context.asAbsolutePath(
+  const serverModule = context.asAbsolutePath(
     path.join("server", "out", "server.js"),
   );
 
-  const runExecutable: Executable = {
-    command: process.execPath,
-    args: [serverEntry],
-    transport: TransportKind.stdio,
-  };
-
-  const debugExecutable: Executable = {
-    command: process.execPath,
-    args: ["--nolazy", "--inspect=6009", serverEntry],
-    transport: TransportKind.stdio,
-  };
-
   const serverOptions: ServerOptions = {
-    run: runExecutable,
-    debug: debugExecutable,
+    run: { module: serverModule, transport: TransportKind.stdio },
+    debug: { module: serverModule, transport: TransportKind.stdio },
   };
 
-  // 対象とする言語。今回はplaintext
   const clientOptions: LanguageClientOptions = {
-    // Register the server for plain text documents
-    documentSelector: [
-      { pattern: "**", scheme: "file" },
-      { pattern: "**", scheme: "untitled" },
-    ],
-    synchronize: {
-      // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
-    },
+    documentSelector: [{ scheme: "file", language: "sql" }],
   };
 
   // Create the language client and start the client.
