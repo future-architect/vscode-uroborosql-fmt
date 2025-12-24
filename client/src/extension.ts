@@ -37,6 +37,9 @@ export function activate(context: ExtensionContext) {
 
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: "file", language: "sql" }],
+    synchronize: {
+      configurationSection: "uroborosql-fmt",
+    },
   };
 
   // Create the language client and start the client.
@@ -50,7 +53,7 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.uroborosql-format",
-      buildFormatFunction(client),
+      buildFormatFunction(),
     ),
   );
 
