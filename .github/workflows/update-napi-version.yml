@@ -1,0 +1,71 @@
+name: Update NAPI Version
+
+on:
+  # 毎日 UTC 0:00 に uroborosql-fmt の最新リリースを確認
+  schedule:
+    - cron: "0 0 * * *"
+  # 手動実行も可能
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    # fork からの実行を防止
+    if: github.repository == 'future-architect/vscode-uroborosql-fmt'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest uroborosql-fmt release version
+        id: latest
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/future-architect/uroborosql-fmt/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Latest uroborosql-fmt version: $LATEST"
+
+      - name: Get current NAPI version
+        id: current
+        run: |
+          CURRENT=$(grep -oP 'NAPI_VERSION = "\K[0-9]+\.[0-9]+\.[0-9]+' server/download-uroborosql-fmt-napi.mjs)
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "Current NAPI version: $CURRENT"
+
+      - name: Update version references
+        if: steps.latest.outputs.version != steps.current.outputs.version && steps.latest.outputs.version != 'null'
+        env:
+          NEW_VERSION: ${{ steps.latest.outputs.version }}
+          OLD_VERSION: ${{ steps.current.outputs.version }}
+        run: |
+          echo "Updating NAPI version from ${OLD_VERSION} to ${NEW_VERSION}"
+
+          # server/download-uroborosql-fmt-napi.mjs の NAPI_VERSION 定数を更新
+          sed -i "s/NAPI_VERSION = \"${OLD_VERSION}\"/NAPI_VERSION = \"${NEW_VERSION}\"/" server/download-uroborosql-fmt-napi.mjs
+
+          # server/package.json の依存関係パスを更新
+          sed -i "s/uroborosql-fmt-napi-${OLD_VERSION}/uroborosql-fmt-napi-${NEW_VERSION}/g" server/package.json
+
+          echo "Updated files:"
+          git diff --stat
+
+      - name: Create Pull Request
+        if: steps.latest.outputs.version != steps.current.outputs.version && steps.latest.outputs.version != 'null'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update uroborosql-fmt-napi to ${{ steps.latest.outputs.version }}"
+          title: "Update uroborosql-fmt-napi to ${{ steps.latest.outputs.version }}"
+          body: |
+            uroborosql-fmt-napi を ${{ steps.current.outputs.version }} から ${{ steps.latest.outputs.version }} に更新する自動 PR です。
+
+            Release: https://github.com/future-architect/uroborosql-fmt/releases/tag/v${{ steps.latest.outputs.version }}
+
+            > [!NOTE]
+            > vscode 拡張のリリースが必要な場合は、マージ前に changeset を追加してください。
+            > ```bash
+            > npx changeset
+            > ```
+          branch: update-napi-${{ steps.latest.outputs.version }}
+          delete-branch: true

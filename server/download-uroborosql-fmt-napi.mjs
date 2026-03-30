@@ -7,15 +7,20 @@ import * as cp from "child_process";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// uroborosql-fmt-napi のバージョン
+// update-napi-version.yml ワークフローによって自動更新される
+const NAPI_VERSION = "1.0.1";
+
 main();
 
 async function main() {
+  const tgzName = `uroborosql-fmt-napi-${NAPI_VERSION}.tgz`;
   const agent = autoProxyAgent();
   const res = await fetch(
-    "https://future-architect.github.io/uroborosql-fmt/uroborosql-fmt-napi-1.0.1.tgz",
+    `https://github.com/future-architect/uroborosql-fmt/releases/download/v${NAPI_VERSION}/${tgzName}`,
     agent ? { dispatcher: agent } : undefined,
   );
-  const destination = join(__dirname, "uroborosql-fmt-napi-1.0.1.tgz");
+  const destination = join(__dirname, tgzName);
   writeFileSync(destination, Buffer.from(await res.arrayBuffer()));
 
   cp.execSync(`npm install ${destination}`, { cwd: __dirname });
