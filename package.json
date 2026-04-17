@@ -54,6 +54,12 @@
           "pattern": "^$|.+\\.json$",
           "patternErrorMessage": "File extension must be `.json`."
         },
+        "uroborosql-fmt.lintConfigurationFilePath": {
+          "type": "string",
+          "markdownDescription": "The path of lint configuration file. File extension must be `.json`.",
+          "pattern": "^$|.+\\.json$",
+          "patternErrorMessage": "File extension must be `.json`."
+        },
         "uroborosql-fmt.debug": {
           "type": [
             "boolean",

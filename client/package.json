@@ -10,10 +10,12 @@
     "vscode": "^1.63.0"
   },
   "dependencies": {
+    "uroborosql-fmt-napi": "file:../../uroborosql-fmt/crates/uroborosql-fmt-napi",
     "vscode-languageclient": "^7.0.0"
   },
   "devDependencies": {
+    "@types/node": "^25.5.0",
     "@types/vscode": "^1.63.0",
-    "@vscode/test-electron": "^2.1.2"
+    "@vscode/test-electron": "^2.4.0"
   }
 }
