@@ -1,38 +1,47 @@
-import * as vscode from "vscode";
 import * as assert from "assert";
-import { getDocUri, activate } from "./helper";
+import * as vscode from "vscode";
+import { activate, executeCommandWithWait, getDocUri, waitFor } from "./helper";
 
-suite("Should do completion", () => {
-  const docUri = getDocUri("completion.txt");
+suite("Should format SQL", () => {
+  const docUri = getDocUri("format.sql");
 
-  test("Completes JS/TS in txt file", async () => {
-    await testCompletion(docUri, new vscode.Position(0, 0), {
-      items: [
-        { label: "JavaScript", kind: vscode.CompletionItemKind.Text },
-        { label: "TypeScript", kind: vscode.CompletionItemKind.Text },
-      ],
-    });
+  test("Formats an entire SQL document", async () => {
+    const document = await activate(docUri);
+    const original = document.getText();
+    await executeCommandWithWait("editor.action.formatDocument");
+    const formattedDocument = await waitFor(
+      () => vscode.workspace.openTextDocument(docUri),
+      (value) => value.getText() !== original,
+    );
+    const formatted = formattedDocument.getText();
+
+    assert.notStrictEqual(formatted, original);
+    assert.match(formatted, /from\n\tb/);
+    assert.match(formatted, /a\tas\ta/);
+  });
+
+  test("Formats a selected SQL range", async () => {
+    const rangeUri = getDocUri("range.sql");
+    const document = await activate(rangeUri);
+    const fullRange = new vscode.Range(
+      document.positionAt(0),
+      document.positionAt(document.getText().length),
+    );
+    const original = document.getText();
+    vscode.window.activeTextEditor!.selection = new vscode.Selection(
+      fullRange.start,
+      fullRange.end,
+    );
+
+    await executeCommandWithWait("editor.action.formatSelection");
+    const formattedDocument = await waitFor(
+      () => vscode.workspace.openTextDocument(rangeUri),
+      (value) => value.getText() !== original,
+    );
+    const formatted = formattedDocument.getText();
+
+    assert.notStrictEqual(formatted, original);
+    assert.match(formatted, /from\n\tb/);
+    assert.match(formatted, /a\tas\ta/);
   });
 });
-
-async function testCompletion(
-  docUri: vscode.Uri,
-  position: vscode.Position,
-  expectedCompletionList: vscode.CompletionList,
-) {
-  await activate(docUri);
-
-  // Executing the command `vscode.executeCompletionItemProvider` to simulate triggering completion
-  const actualCompletionList = (await vscode.commands.executeCommand(
-    "vscode.executeCompletionItemProvider",
-    docUri,
-    position,
-  )) as vscode.CompletionList;
-
-  assert.ok(actualCompletionList.items.length >= 2);
-  expectedCompletionList.items.forEach((expectedItem, i) => {
-    const actualItem = actualCompletionList.items[i];
-    assert.equal(actualItem.label, expectedItem.label);
-    assert.equal(actualItem.kind, expectedItem.kind);
-  });
-}
