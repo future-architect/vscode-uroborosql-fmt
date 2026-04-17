@@ -1,0 +1,2 @@
+SELECT DISTINCT id
+FROM users;
