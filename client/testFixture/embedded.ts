@@ -1,1 +1,1 @@
-const sql = `select distinct id from users`;
+export const sql = `select distinct id from users`;
