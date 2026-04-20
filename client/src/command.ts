@@ -3,12 +3,47 @@ import { objectToCamel, objectToSnake } from "ts-case-convert";
 import type { ObjectToSnake } from "ts-case-convert/lib/caseConvert";
 import {
   ConfigurationTarget,
+  Position,
+  Range,
+  Selection,
+  TextDocument,
   Uri,
   window,
   workspace,
   WorkspaceConfiguration,
   WorkspaceFolder,
+  WorkspaceEdit,
 } from "vscode";
+import type { LanguageClient } from "vscode-languageclient/node";
+
+const FORMAT_SELECTIONS_AS_SQL_METHOD = "uroborosql/formatSelectionsAsSql";
+const EMPTY_SELECTION_MESSAGE = "Select text to format as SQL.";
+const OVERLAPPING_SELECTIONS_MESSAGE = "Selections must not overlap.";
+const VERSION_MISMATCH_MESSAGE =
+  "Document changed while formatting selection as SQL.";
+
+type FormatSelectionAsSqlRequest = {
+  hostDocumentUri: string;
+  hostDocumentVersion: number;
+  selections: {
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    };
+    text: string;
+  }[];
+};
+
+type FormatSelectionAsSqlResponse = {
+  hostDocumentVersion: number;
+  edits: {
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    };
+    newText: string;
+  }[];
+};
 
 const vsCodeConfigurationsObject = {
   configurationFilePath: "",
@@ -210,4 +245,99 @@ export const buildImportSettingsFunction =
         vsCodeConfig.update(key, value, target),
       ),
     );
+  };
+
+const selectionToRange = (selection: Selection): Range =>
+  new Range(selection.start, selection.end);
+
+const rangeToRequestRange = (range: Range) => ({
+  start: { line: range.start.line, character: range.start.character },
+  end: { line: range.end.line, character: range.end.character },
+});
+
+const requestRangeToRange = (range: {
+  start: { line: number; character: number };
+  end: { line: number; character: number };
+}): Range =>
+  new Range(
+    new Position(range.start.line, range.start.character),
+    new Position(range.end.line, range.end.character),
+  );
+
+export const selectionsMustNotOverlap = (
+  document: TextDocument,
+  selections: readonly Selection[],
+): boolean => {
+  const sortedRanges = selections
+    .map(selectionToRange)
+    .map((range) => ({
+      start: document.offsetAt(range.start),
+      end: document.offsetAt(range.end),
+    }))
+    .sort((left, right) => left.start - right.start);
+
+  for (let i = 1; i < sortedRanges.length; i += 1) {
+    if (sortedRanges[i].start < sortedRanges[i - 1].end) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+export const buildFormatSelectionsAsSqlCommand =
+  (client: LanguageClient) => async (): Promise<void> => {
+    const editor = window.activeTextEditor;
+    if (!editor) {
+      return;
+    }
+
+    const { document, selections } = editor;
+    if (selections.length === 0 || selections.some((selection) => selection.isEmpty)) {
+      window.showErrorMessage(EMPTY_SELECTION_MESSAGE);
+      return;
+    }
+
+    if (!selectionsMustNotOverlap(document, selections)) {
+      window.showErrorMessage(OVERLAPPING_SELECTIONS_MESSAGE);
+      return;
+    }
+
+    const requestVersion = document.version;
+    const params: FormatSelectionAsSqlRequest = {
+      hostDocumentUri: document.uri.toString(),
+      hostDocumentVersion: requestVersion,
+      selections: selections.map((selection) => {
+        const range = selectionToRange(selection);
+        return {
+          range: rangeToRequestRange(range),
+          text: document.getText(range),
+        };
+      }),
+    };
+
+    await client.onReady();
+    const result = await client.sendRequest<FormatSelectionAsSqlResponse>(
+      FORMAT_SELECTIONS_AS_SQL_METHOD,
+      params,
+    );
+
+    if (
+      document.version !== requestVersion ||
+      result.hostDocumentVersion !== requestVersion
+    ) {
+      window.showErrorMessage(VERSION_MISMATCH_MESSAGE);
+      return;
+    }
+
+    const edit = new WorkspaceEdit();
+    for (const textEdit of result.edits) {
+      edit.replace(
+        document.uri,
+        requestRangeToRange(textEdit.range),
+        textEdit.newText,
+      );
+    }
+
+    await workspace.applyEdit(edit);
   };

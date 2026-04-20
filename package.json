@@ -39,6 +39,10 @@
       {
         "command": "uroborosql-fmt.export",
         "title": "Export workspace config to uroborosql-fmt config file"
+      },
+      {
+        "command": "uroborosql-fmt.format-selection-as-sql",
+        "title": "Format Selection as SQL"
       }
     ],
     "configuration": {
