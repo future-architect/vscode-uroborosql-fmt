@@ -6,7 +6,9 @@ export let editor: vscode.TextEditor;
 
 const EXTENSION_ID = "Future.uroborosql-fmt";
 
-export async function activate(docUri: vscode.Uri): Promise<vscode.TextDocument> {
+export async function activate(
+  docUri: vscode.Uri,
+): Promise<vscode.TextDocument> {
   const ext = vscode.extensions.getExtension(EXTENSION_ID);
   if (!ext) {
     throw new Error(`Extension not found: ${EXTENSION_ID}`);
@@ -19,7 +21,9 @@ export async function activate(docUri: vscode.Uri): Promise<vscode.TextDocument>
   return doc;
 }
 
-export async function reopenDocument(docUri: vscode.Uri): Promise<vscode.TextDocument> {
+export async function reopenDocument(
+  docUri: vscode.Uri,
+): Promise<vscode.TextDocument> {
   doc = await vscode.workspace.openTextDocument(docUri);
   editor = await vscode.window.showTextDocument(doc);
   return doc;

@@ -122,7 +122,10 @@ const getConfigFileName = (
   defaultName: string = ".uroborosqlfmtrc.json",
 ): string => {
   // uroborosql-fmt の設定を取得
-  const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt", documentUri);
+  const vsCodeConfig = workspace.getConfiguration(
+    "uroborosql-fmt",
+    documentUri,
+  );
 
   // Default value of `uroborosql-fmt.configurationFilePath` is "".
   const vsCodeConfigPath: string = vsCodeConfig.get("configurationFilePath");
@@ -293,7 +296,10 @@ export const buildFormatSelectionsAsSqlCommand =
     }
 
     const { document, selections } = editor;
-    if (selections.length === 0 || selections.some((selection) => selection.isEmpty)) {
+    if (
+      selections.length === 0 ||
+      selections.some((selection) => selection.isEmpty)
+    ) {
       window.showErrorMessage(EMPTY_SELECTION_MESSAGE);
       return;
     }
