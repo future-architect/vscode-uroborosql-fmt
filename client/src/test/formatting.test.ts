@@ -2,7 +2,7 @@ import * as assert from "assert";
 import * as vscode from "vscode";
 import { activate, executeCommandWithWait, getDocUri, waitFor } from "./helper";
 
-suite("Should format SQL", () => {
+suite("Should format SQL documents", () => {
   const docUri = getDocUri("format.sql");
 
   test("Formats an entire SQL document", async () => {
