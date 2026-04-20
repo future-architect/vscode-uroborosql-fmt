@@ -19,7 +19,6 @@ async function main() {
   writeFileSync(destination, Buffer.from(await res.arrayBuffer()));
 
   cp.execSync(`npm install ${destination}`, { cwd: __dirname });
-  cp.execSync(`npm install ${destination}`, { cwd: join(__dirname, '..', 'client') });
 }
 
 function autoProxyAgent() {

@@ -29,10 +29,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "uroborosql-fmt.uroborosql-format",
-        "title": "Format SQL"
-      },
-      {
         "command": "uroborosql-fmt.import-to-global",
         "title": "Import uroborosql-fmt config file config to global config"
       },

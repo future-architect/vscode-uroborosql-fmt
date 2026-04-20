@@ -8,11 +8,7 @@ import {
   workspace,
   WorkspaceConfiguration,
   WorkspaceFolder,
-  Range,
-  TextEdit,
-  WorkspaceEdit,
 } from "vscode";
-import { runfmtWithSettings } from "uroborosql-fmt-napi";
 
 const vsCodeConfigurationsObject = {
   configurationFilePath: "",
@@ -138,74 +134,6 @@ const getTargetFolder = (): WorkspaceFolder | undefined => {
   );
   return;
 };
-
-export const buildFormatFunction =
-  () => async (): Promise<void> => {
-    const { configurationFilePath, lintConfigurationFilePath, ...otherConfigs } = extractFormattingConfigurations(
-      workspace.getConfiguration("uroborosql-fmt")
-    );
-
-    // Convert camelCase to snake_case for Rust config
-    const snakeCaseConfigs = objectToSnake(otherConfigs);
-
-    const document = window.activeTextEditor?.document;
-    if (!document) {
-      return;
-    }
-
-    try {
-      const configFileName = getConfigFileName(document.uri);
-      const workspaceFolder = workspace.getWorkspaceFolder(document.uri);
-      let configPath: string | null = null;
-      if (path.isAbsolute(configFileName)) {
-        if (await isFileExists(Uri.file(configFileName))) {
-          configPath = configFileName;
-        }
-      } else if (workspaceFolder) {
-        const absolutePath = path.join(workspaceFolder.uri.fsPath, configFileName);
-        if (await isFileExists(Uri.file(absolutePath))) {
-          configPath = absolutePath;
-        }
-      }
-
-      const settingsJson = JSON.stringify(snakeCaseConfigs);
-      const selections = window.activeTextEditor?.selections ?? [];
-      const edits: TextEdit[] = [];
-
-      // 選択箇所があればそれぞれをフォーマット
-      for (const selection of selections) {
-        if (selection.isEmpty) {
-          continue;
-        }
-        const text = document.getText(selection);
-        const formatted = runfmtWithSettings(text, settingsJson, configPath);
-        if (formatted !== text) {
-          edits.push(new TextEdit(selection, formatted));
-        }
-      }
-
-      // 選択箇所がなければドキュメント全体をフォーマット
-      if (edits.length === 0) {
-        const text = document.getText();
-        const formatted = runfmtWithSettings(text, settingsJson, configPath);
-        if (formatted !== text) {
-          const fullRange = new Range(
-            document.positionAt(0),
-            document.positionAt(text.length)
-          );
-          edits.push(new TextEdit(fullRange, formatted));
-        }
-      }
-
-      if (edits.length > 0) {
-        const wsEdit = new WorkspaceEdit();
-        wsEdit.set(document.uri, edits);
-        await workspace.applyEdit(wsEdit);
-      }
-    } catch (e) {
-      window.showErrorMessage(`Format failed: ${e}`);
-    }
-  };
 
 export const exportSettings = async (): Promise<void> => {
   const folder = getTargetFolder();

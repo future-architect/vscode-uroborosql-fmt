@@ -10,7 +10,6 @@
     "vscode": "^1.63.0"
   },
   "dependencies": {
-    "uroborosql-fmt-napi": "file:../../uroborosql-fmt/crates/uroborosql-fmt-napi",
     "vscode-languageclient": "^7.0.0"
   },
   "devDependencies": {

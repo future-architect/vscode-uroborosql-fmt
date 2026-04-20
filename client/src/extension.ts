@@ -17,7 +17,6 @@ import {
 } from "vscode-languageclient/node";
 
 import {
-  buildFormatFunction,
   exportSettings,
   buildImportSettingsFunction,
 } from "./command";
@@ -48,13 +47,6 @@ export function activate(context: ExtensionContext) {
     "Uroborosql-fmt",
     serverOptions,
     clientOptions,
-  );
-
-  context.subscriptions.push(
-    commands.registerCommand(
-      "uroborosql-fmt.uroborosql-format",
-      buildFormatFunction(),
-    ),
   );
 
   context.subscriptions.push(
