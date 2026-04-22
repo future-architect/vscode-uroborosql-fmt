@@ -6,7 +6,7 @@ import { activate, executeCommandWithWait, getDocUri, waitFor } from "./helper";
 suite("Should format embedded SQL selections", () => {
   const docUri = getDocUri("embedded.ts");
 
-  test("Formats the selected text as SQL", async () => {
+  test("Formats the selected embedded SQL", async () => {
     const document = await activate(docUri);
     const original = document.getText();
     const start = document.getText().indexOf("select distinct id from users");
