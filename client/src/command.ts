@@ -21,6 +21,7 @@ const EMPTY_SELECTION_MESSAGE = "Select text to format as SQL.";
 const OVERLAPPING_SELECTIONS_MESSAGE = "Selections must not overlap.";
 const VERSION_MISMATCH_MESSAGE =
   "Document changed while formatting selection as SQL.";
+const FORMAT_FAILURE_PREFIX = "Format failed: ";
 
 type FormatSelectionAsSqlRequest = {
   hostDocumentUri: string;
@@ -43,6 +44,10 @@ type FormatSelectionAsSqlResponse = {
     };
     newText: string;
   }[];
+};
+
+type FormatAsSqlCommandOptions = {
+  formatWholeDocumentWhenNoSelection: boolean;
 };
 
 const vsCodeConfigurationsObject = {
@@ -267,6 +272,39 @@ const requestRangeToRange = (range: {
     new Position(range.end.line, range.end.character),
   );
 
+const getFullDocumentRange = (document: TextDocument): Range =>
+  new Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  );
+
+const formatFailureMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return `${FORMAT_FAILURE_PREFIX}${error.message}`;
+  }
+  return `${FORMAT_FAILURE_PREFIX}${String(error)}`;
+};
+
+const getSelectionsToFormat = (
+  document: TextDocument,
+  selections: readonly Selection[],
+  options: FormatAsSqlCommandOptions,
+): Range[] => {
+  const nonEmptySelections = selections.filter(
+    (selection) => !selection.isEmpty,
+  );
+
+  if (nonEmptySelections.length > 0) {
+    return nonEmptySelections.map(selectionToRange);
+  }
+
+  if (options.formatWholeDocumentWhenNoSelection) {
+    return [getFullDocumentRange(document)];
+  }
+
+  return [];
+};
+
 export const selectionsMustNotOverlap = (
   document: TextDocument,
   selections: readonly Selection[],
@@ -288,8 +326,9 @@ export const selectionsMustNotOverlap = (
   return true;
 };
 
-export const buildFormatSelectionsAsSqlCommand =
-  (client: LanguageClient) => async (): Promise<void> => {
+const buildFormatAsSqlCommand =
+  (client: LanguageClient, options: FormatAsSqlCommandOptions) =>
+  async (): Promise<void> => {
     const editor = window.activeTextEditor;
     if (!editor) {
       return;
@@ -297,14 +336,24 @@ export const buildFormatSelectionsAsSqlCommand =
 
     const { document, selections } = editor;
     if (
-      selections.length === 0 ||
-      selections.some((selection) => selection.isEmpty)
+      !options.formatWholeDocumentWhenNoSelection &&
+      (selections.length === 0 ||
+        selections.some((selection) => selection.isEmpty))
     ) {
       window.showErrorMessage(EMPTY_SELECTION_MESSAGE);
       return;
     }
 
-    if (!selectionsMustNotOverlap(document, selections)) {
+    const rangesToFormat = getSelectionsToFormat(document, selections, options);
+    if (rangesToFormat.length === 0) {
+      window.showErrorMessage(EMPTY_SELECTION_MESSAGE);
+      return;
+    }
+
+    const selectionRanges = rangesToFormat.map(
+      (range) => new Selection(range.start, range.end),
+    );
+    if (!selectionsMustNotOverlap(document, selectionRanges)) {
       window.showErrorMessage(OVERLAPPING_SELECTIONS_MESSAGE);
       return;
     }
@@ -313,37 +362,48 @@ export const buildFormatSelectionsAsSqlCommand =
     const params: FormatSelectionAsSqlRequest = {
       hostDocumentUri: document.uri.toString(),
       hostDocumentVersion: requestVersion,
-      selections: selections.map((selection) => {
-        const range = selectionToRange(selection);
-        return {
-          range: rangeToRequestRange(range),
-          text: document.getText(range),
-        };
-      }),
+      selections: rangesToFormat.map((range) => ({
+        range: rangeToRequestRange(range),
+        text: document.getText(range),
+      })),
     };
 
-    await client.onReady();
-    const result = await client.sendRequest<FormatSelectionAsSqlResponse>(
-      FORMAT_SELECTIONS_AS_SQL_METHOD,
-      params,
-    );
-
-    if (
-      document.version !== requestVersion ||
-      result.hostDocumentVersion !== requestVersion
-    ) {
-      window.showErrorMessage(VERSION_MISMATCH_MESSAGE);
-      return;
-    }
-
-    const edit = new WorkspaceEdit();
-    for (const textEdit of result.edits) {
-      edit.replace(
-        document.uri,
-        requestRangeToRange(textEdit.range),
-        textEdit.newText,
+    try {
+      await client.onReady();
+      const result = await client.sendRequest<FormatSelectionAsSqlResponse>(
+        FORMAT_SELECTIONS_AS_SQL_METHOD,
+        params,
       );
-    }
 
-    await workspace.applyEdit(edit);
+      if (
+        document.version !== requestVersion ||
+        result.hostDocumentVersion !== requestVersion
+      ) {
+        window.showErrorMessage(VERSION_MISMATCH_MESSAGE);
+        return;
+      }
+
+      const edit = new WorkspaceEdit();
+      for (const textEdit of result.edits) {
+        edit.replace(
+          document.uri,
+          requestRangeToRange(textEdit.range),
+          textEdit.newText,
+        );
+      }
+
+      await workspace.applyEdit(edit);
+    } catch (error) {
+      window.showErrorMessage(formatFailureMessage(error));
+    }
   };
+
+export const buildFormatSelectionsAsSqlCommand = (client: LanguageClient) =>
+  buildFormatAsSqlCommand(client, {
+    formatWholeDocumentWhenNoSelection: false,
+  });
+
+export const buildFormatSqlCommand = (client: LanguageClient) =>
+  buildFormatAsSqlCommand(client, {
+    formatWholeDocumentWhenNoSelection: true,
+  });

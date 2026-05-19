@@ -92,3 +92,25 @@ export async function replaceDocumentText(
   await vscode.workspace.applyEdit(edit);
   await document.save();
 }
+
+export async function captureErrorMessages<T>(
+  callback: () => Promise<T>,
+): Promise<{ result: T; messages: string[] }> {
+  const messages: string[] = [];
+  const original = vscode.window.showErrorMessage;
+  const windowWithStub = vscode.window as typeof vscode.window & {
+    showErrorMessage: typeof vscode.window.showErrorMessage;
+  };
+
+  windowWithStub.showErrorMessage = ((message: string) => {
+    messages.push(message);
+    return Promise.resolve(undefined);
+  }) as typeof vscode.window.showErrorMessage;
+
+  try {
+    const result = await callback();
+    return { result, messages };
+  } finally {
+    windowWithStub.showErrorMessage = original;
+  }
+}

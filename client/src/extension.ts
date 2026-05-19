@@ -20,6 +20,7 @@ import {
   exportSettings,
   buildImportSettingsFunction,
   buildFormatSelectionsAsSqlCommand,
+  buildFormatSqlCommand,
 } from "./command";
 
 let client: LanguageClient;
@@ -65,6 +66,13 @@ export function activate(context: ExtensionContext) {
     commands.registerCommand(
       "uroborosql-fmt.import-to-workspace",
       buildImportSettingsFunction(ConfigurationTarget.Workspace),
+    ),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.uroborosql-format",
+      buildFormatSqlCommand(client),
     ),
   );
 
