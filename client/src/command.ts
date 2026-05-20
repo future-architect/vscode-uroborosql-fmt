@@ -3,12 +3,52 @@ import { objectToCamel, objectToSnake } from "ts-case-convert";
 import type { ObjectToSnake } from "ts-case-convert/lib/caseConvert";
 import {
   ConfigurationTarget,
+  Position,
+  Range,
+  Selection,
+  TextDocument,
   Uri,
   window,
   workspace,
   WorkspaceConfiguration,
   WorkspaceFolder,
+  WorkspaceEdit,
 } from "vscode";
+import type { LanguageClient } from "vscode-languageclient/node";
+
+const FORMAT_SELECTIONS_AS_SQL_METHOD = "uroborosql/formatSelectionsAsSql";
+const EMPTY_SELECTION_MESSAGE = "Select text to format as SQL.";
+const OVERLAPPING_SELECTIONS_MESSAGE = "Selections must not overlap.";
+const VERSION_MISMATCH_MESSAGE =
+  "Document changed while formatting selection as SQL.";
+const FORMAT_FAILURE_PREFIX = "Format failed: ";
+
+type FormatSelectionAsSqlRequest = {
+  hostDocumentUri: string;
+  hostDocumentVersion: number;
+  selections: {
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    };
+    text: string;
+  }[];
+};
+
+type FormatSelectionAsSqlResponse = {
+  hostDocumentVersion: number;
+  edits: {
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    };
+    newText: string;
+  }[];
+};
+
+type FormatAsSqlCommandOptions = {
+  formatWholeDocumentWhenNoSelection: boolean;
+};
 
 const vsCodeConfigurationsObject = {
   configurationFilePath: "",
@@ -87,7 +127,10 @@ const getConfigFileName = (
   defaultName: string = ".uroborosqlfmtrc.json",
 ): string => {
   // uroborosql-fmt の設定を取得
-  const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt", documentUri);
+  const vsCodeConfig = workspace.getConfiguration(
+    "uroborosql-fmt",
+    documentUri,
+  );
 
   // Default value of `uroborosql-fmt.configurationFilePath` is "".
   const vsCodeConfigPath: string = vsCodeConfig.get("configurationFilePath");
@@ -211,3 +254,156 @@ export const buildImportSettingsFunction =
       ),
     );
   };
+
+const selectionToRange = (selection: Selection): Range =>
+  new Range(selection.start, selection.end);
+
+const rangeToRequestRange = (range: Range) => ({
+  start: { line: range.start.line, character: range.start.character },
+  end: { line: range.end.line, character: range.end.character },
+});
+
+const requestRangeToRange = (range: {
+  start: { line: number; character: number };
+  end: { line: number; character: number };
+}): Range =>
+  new Range(
+    new Position(range.start.line, range.start.character),
+    new Position(range.end.line, range.end.character),
+  );
+
+const getFullDocumentRange = (document: TextDocument): Range =>
+  new Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  );
+
+const formatFailureMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return `${FORMAT_FAILURE_PREFIX}${error.message}`;
+  }
+  return `${FORMAT_FAILURE_PREFIX}${String(error)}`;
+};
+
+const getSelectionsToFormat = (
+  document: TextDocument,
+  selections: readonly Selection[],
+  options: FormatAsSqlCommandOptions,
+): Range[] => {
+  const nonEmptySelections = selections.filter(
+    (selection) => !selection.isEmpty,
+  );
+
+  if (nonEmptySelections.length > 0) {
+    return nonEmptySelections.map(selectionToRange);
+  }
+
+  if (options.formatWholeDocumentWhenNoSelection) {
+    return [getFullDocumentRange(document)];
+  }
+
+  return [];
+};
+
+const hasOverlappingSelections = (
+  document: TextDocument,
+  selections: readonly Selection[],
+): boolean => {
+  const sortedRanges = selections
+    .map(selectionToRange)
+    .map((range) => ({
+      start: document.offsetAt(range.start),
+      end: document.offsetAt(range.end),
+    }))
+    .sort((left, right) => left.start - right.start);
+
+  for (let i = 1; i < sortedRanges.length; i += 1) {
+    if (sortedRanges[i].start < sortedRanges[i - 1].end) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const buildFormatAsSqlCommand =
+  (client: LanguageClient, options: FormatAsSqlCommandOptions) =>
+  async (): Promise<void> => {
+    const editor = window.activeTextEditor;
+    if (!editor) {
+      return;
+    }
+
+    const { document, selections } = editor;
+    if (
+      !options.formatWholeDocumentWhenNoSelection &&
+      (selections.length === 0 ||
+        selections.some((selection) => selection.isEmpty))
+    ) {
+      window.showErrorMessage(EMPTY_SELECTION_MESSAGE);
+      return;
+    }
+
+    const rangesToFormat = getSelectionsToFormat(document, selections, options);
+    if (rangesToFormat.length === 0) {
+      window.showErrorMessage(EMPTY_SELECTION_MESSAGE);
+      return;
+    }
+
+    const selectionRanges = rangesToFormat.map(
+      (range) => new Selection(range.start, range.end),
+    );
+    if (hasOverlappingSelections(document, selectionRanges)) {
+      window.showErrorMessage(OVERLAPPING_SELECTIONS_MESSAGE);
+      return;
+    }
+
+    const requestVersion = document.version;
+    const params: FormatSelectionAsSqlRequest = {
+      hostDocumentUri: document.uri.toString(),
+      hostDocumentVersion: requestVersion,
+      selections: rangesToFormat.map((range) => ({
+        range: rangeToRequestRange(range),
+        text: document.getText(range),
+      })),
+    };
+
+    try {
+      await client.onReady();
+      const result = await client.sendRequest<FormatSelectionAsSqlResponse>(
+        FORMAT_SELECTIONS_AS_SQL_METHOD,
+        params,
+      );
+
+      if (
+        document.version !== requestVersion ||
+        result.hostDocumentVersion !== requestVersion
+      ) {
+        window.showErrorMessage(VERSION_MISMATCH_MESSAGE);
+        return;
+      }
+
+      const edit = new WorkspaceEdit();
+      for (const textEdit of result.edits) {
+        edit.replace(
+          document.uri,
+          requestRangeToRange(textEdit.range),
+          textEdit.newText,
+        );
+      }
+
+      await workspace.applyEdit(edit);
+    } catch (error) {
+      window.showErrorMessage(formatFailureMessage(error));
+    }
+  };
+
+export const buildFormatSelectionsAsSqlCommand = (client: LanguageClient) =>
+  buildFormatAsSqlCommand(client, {
+    formatWholeDocumentWhenNoSelection: false,
+  });
+
+export const buildFormatSqlCommand = (client: LanguageClient) =>
+  buildFormatAsSqlCommand(client, {
+    formatWholeDocumentWhenNoSelection: true,
+  });

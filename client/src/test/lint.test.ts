@@ -1,10 +1,6 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import {
-  activate,
-  getDocUri,
-  waitFor,
-} from "./helper";
+import { activate, getDocUri, waitFor } from "./helper";
 
 suite("Lint E2E", () => {
   test("Publishes configured lint diagnostics", async () => {

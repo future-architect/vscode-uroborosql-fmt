@@ -1,12 +1,11 @@
 import * as vscode from "vscode";
 import * as path from "path";
 
-export let doc: vscode.TextDocument;
-export let editor: vscode.TextEditor;
-
 const EXTENSION_ID = "Future.uroborosql-fmt";
 
-export async function activate(docUri: vscode.Uri): Promise<vscode.TextDocument> {
+export async function activate(
+  docUri: vscode.Uri,
+): Promise<vscode.TextDocument> {
   const ext = vscode.extensions.getExtension(EXTENSION_ID);
   if (!ext) {
     throw new Error(`Extension not found: ${EXTENSION_ID}`);
@@ -14,18 +13,12 @@ export async function activate(docUri: vscode.Uri): Promise<vscode.TextDocument>
 
   await ext.activate();
 
-  doc = await vscode.workspace.openTextDocument(docUri);
-  editor = await vscode.window.showTextDocument(doc);
+  const doc = await vscode.workspace.openTextDocument(docUri);
+  await vscode.window.showTextDocument(doc);
   return doc;
 }
 
-export async function reopenDocument(docUri: vscode.Uri): Promise<vscode.TextDocument> {
-  doc = await vscode.workspace.openTextDocument(docUri);
-  editor = await vscode.window.showTextDocument(doc);
-  return doc;
-}
-
-export async function sleep(ms: number) {
+async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -38,20 +31,12 @@ export async function executeCommandWithWait(
   await sleep(1000);
 }
 
-export const getDocPath = (p: string) => {
+const getDocPath = (p: string) => {
   return path.resolve(__dirname, "../../testFixture", p);
 };
 export const getDocUri = (p: string) => {
   return vscode.Uri.file(getDocPath(p));
 };
-
-export async function setTestContent(content: string): Promise<boolean> {
-  const all = new vscode.Range(
-    doc.positionAt(0),
-    doc.positionAt(doc.getText().length),
-  );
-  return editor.edit((eb) => eb.replace(all, content));
-}
 
 export async function waitFor<T>(
   getValue: () => Thenable<T> | T,
@@ -87,4 +72,26 @@ export async function replaceDocumentText(
   );
   await vscode.workspace.applyEdit(edit);
   await document.save();
+}
+
+export async function captureErrorMessages<T>(
+  callback: () => Promise<T>,
+): Promise<{ result: T; messages: string[] }> {
+  const messages: string[] = [];
+  const original = vscode.window.showErrorMessage;
+  const windowWithStub = vscode.window as typeof vscode.window & {
+    showErrorMessage: typeof vscode.window.showErrorMessage;
+  };
+
+  windowWithStub.showErrorMessage = ((message: string) => {
+    messages.push(message);
+    return Promise.resolve(undefined);
+  }) as typeof vscode.window.showErrorMessage;
+
+  try {
+    const result = await callback();
+    return { result, messages };
+  } finally {
+    windowWithStub.showErrorMessage = original;
+  }
 }
