@@ -1,0 +1,84 @@
+name: Update NAPI Version
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    if: github.repository == 'future-architect/vscode-uroborosql-fmt'
+    env:
+      NAPI_RELEASE_TAG_PREFIX: uroborosql-fmt-napi-v
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Get latest uroborosql-fmt NAPI release version
+        id: latest
+        run: |
+          TAG=$(curl -fsSL \
+            https://api.github.com/repos/future-architect/uroborosql-fmt/releases \
+            | jq -r --arg prefix "$NAPI_RELEASE_TAG_PREFIX" '
+                map(select(.tag_name | startswith($prefix)))[0].tag_name // "null"
+              ')
+          VERSION=$(printf '%s' "$TAG" | sed "s/^${NAPI_RELEASE_TAG_PREFIX}//")
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Latest uroborosql-fmt NAPI release tag: $TAG"
+          echo "Latest uroborosql-fmt NAPI version: $VERSION"
+
+      - name: Get current NAPI version
+        id: current
+        run: |
+          CURRENT=$(grep -oP 'NAPI_VERSION = "\K[0-9]+\.[0-9]+\.[0-9]+' server/download-uroborosql-fmt-napi.mjs)
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "Current NAPI version: $CURRENT"
+
+      - name: Update version references
+        if: steps.latest.outputs.version != steps.current.outputs.version && steps.latest.outputs.version != 'null'
+        env:
+          NEW_VERSION: ${{ steps.latest.outputs.version }}
+          OLD_VERSION: ${{ steps.current.outputs.version }}
+        run: |
+          echo "Updating NAPI version from ${OLD_VERSION} to ${NEW_VERSION}"
+
+          sed -i "s/NAPI_VERSION = \"${OLD_VERSION}\"/NAPI_VERSION = \"${NEW_VERSION}\"/" server/download-uroborosql-fmt-napi.mjs
+          sed -i "s/uroborosql-fmt-napi-${OLD_VERSION}/uroborosql-fmt-napi-${NEW_VERSION}/g" server/package.json
+
+          curl -fsSL \
+            -o "server/uroborosql-fmt-napi-${NEW_VERSION}.tgz" \
+            "https://github.com/future-architect/uroborosql-fmt/releases/download/uroborosql-fmt-napi-v${NEW_VERSION}/uroborosql-fmt-napi-${NEW_VERSION}.tgz"
+          (
+            cd server
+            npm install --package-lock-only "./uroborosql-fmt-napi-${NEW_VERSION}.tgz"
+            rm "./uroborosql-fmt-napi-${NEW_VERSION}.tgz"
+          )
+
+          echo "Updated files:"
+          git diff --stat
+
+      - name: Create Pull Request
+        if: steps.latest.outputs.version != steps.current.outputs.version && steps.latest.outputs.version != 'null'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update uroborosql-fmt-napi to ${{ steps.latest.outputs.version }}"
+          title: "Update uroborosql-fmt-napi to ${{ steps.latest.outputs.version }}"
+          body: |
+            uroborosql-fmt-napi を ${{ steps.current.outputs.version }} から ${{ steps.latest.outputs.version }} に更新する自動 PR です。
+
+            Release: https://github.com/future-architect/uroborosql-fmt/releases/tag/${{ steps.latest.outputs.tag }}
+
+            > [!NOTE]
+            > vscode 拡張のリリースが必要な場合は、マージ前に changeset を追加してください。
+            > ```bash
+            > npx changeset
+            > ```
+          branch: update-napi-${{ steps.latest.outputs.version }}
+          delete-branch: true
