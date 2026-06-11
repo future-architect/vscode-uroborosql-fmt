@@ -57,6 +57,38 @@ export async function waitFor<T>(
   throw new Error(`Timed out after ${timeoutMs}ms`);
 }
 
+export async function waitForStability<T>(
+  getValue: () => Thenable<T> | T,
+  predicate: (value: T) => boolean,
+  stableForMs: number,
+  timeoutMs: number = 10_000,
+  intervalMs: number = 100,
+): Promise<T> {
+  const deadline = Date.now() + timeoutMs;
+  let stableSince: number | null = null;
+  let latestValue: T | undefined;
+
+  while (Date.now() < deadline) {
+    const value = await getValue();
+    latestValue = value;
+
+    if (predicate(value)) {
+      stableSince ??= Date.now();
+      if (Date.now() - stableSince >= stableForMs) {
+        return value;
+      }
+    } else {
+      stableSince = null;
+    }
+
+    await sleep(intervalMs);
+  }
+
+  throw new Error(
+    `Timed out after ${timeoutMs}ms waiting ${stableForMs}ms for a stable value`,
+  );
+}
+
 export async function replaceDocumentText(
   document: vscode.TextDocument,
   content: string,
