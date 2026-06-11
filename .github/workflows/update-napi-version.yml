@@ -40,6 +40,21 @@ jobs:
           echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
           echo "Current NAPI version: $CURRENT"
 
+      - name: Verify current version references are in sync
+        env:
+          CURRENT_VERSION: ${{ steps.current.outputs.version }}
+        run: |
+          PACKAGE_VERSION=$(grep -oP 'uroborosql-fmt-napi-\K[0-9]+\.[0-9]+\.[0-9]+' server/package.json)
+
+          if [ "$CURRENT_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Version mismatch detected:"
+            echo "  download-uroborosql-fmt-napi.mjs: $CURRENT_VERSION"
+            echo "  server/package.json: $PACKAGE_VERSION"
+            exit 1
+          fi
+
+          echo "Current version references are in sync: $CURRENT_VERSION"
+
       - name: Update version references
         if: steps.latest.outputs.version != steps.current.outputs.version && steps.latest.outputs.version != 'null'
         env:
