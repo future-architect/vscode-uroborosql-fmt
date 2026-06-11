@@ -1,5 +1,15 @@
 {
   "rules": {
-    "no-distinct": "error"
-  }
+    "no-distinct": "error",
+    "no-wildcard-projection": "error"
+  },
+  "overrides": [
+    {
+      "files": ["lint/override-warning.sql"],
+      "rules": {
+        "no-distinct": "warn"
+      }
+    }
+  ],
+  "ignore": ["lint/ignored.sql"]
 }
