@@ -66,11 +66,9 @@ export async function waitForStability<T>(
 ): Promise<T> {
   const deadline = Date.now() + timeoutMs;
   let stableSince: number | null = null;
-  let latestValue: T | undefined;
 
   while (Date.now() < deadline) {
     const value = await getValue();
-    latestValue = value;
 
     if (predicate(value)) {
       stableSince ??= Date.now();
