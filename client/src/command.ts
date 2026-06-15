@@ -50,30 +50,8 @@ type FormatAsSqlCommandOptions = {
   formatWholeDocumentWhenNoSelection: boolean;
 };
 
-const vsCodeConfigurationsObject = {
-  configurationFilePath: "",
-  lintConfigurationFilePath: "",
-  debug: null,
-  tabSize: null,
-  complementAlias: null,
-  trimBindParam: null,
-  keywordCase: null,
-  identifierCase: null,
-  maxCharPerLine: null,
-  complementOuterKeyword: null,
-  complementColumnAsKeyword: null,
-  removeTableAsKeyword: null,
-  removeRedundantNest: null,
-  complementSqlId: null,
-  convertDoubleColonCast: null,
-  unifyNotEqual: null,
-  indentTab: null,
-  useParserErrorRecovery: null,
-} satisfies ConfigurationRecord;
-
-type ConfigurationRecord = {
+type FormattingConfigurationRecord = {
   configurationFilePath: string;
-  lintConfigurationFilePath: string;
   debug: boolean | null | undefined;
   tabSize: number | null | undefined;
   complementAlias: boolean | null | undefined;
@@ -92,13 +70,37 @@ type ConfigurationRecord = {
   useParserErrorRecovery: boolean | null | undefined;
 };
 
+const formattingConfigurationsObject = {
+  configurationFilePath: "",
+  debug: null,
+  tabSize: null,
+  complementAlias: null,
+  trimBindParam: null,
+  keywordCase: null,
+  identifierCase: null,
+  maxCharPerLine: null,
+  complementOuterKeyword: null,
+  complementColumnAsKeyword: null,
+  removeTableAsKeyword: null,
+  removeRedundantNest: null,
+  complementSqlId: null,
+  convertDoubleColonCast: null,
+  unifyNotEqual: null,
+  indentTab: null,
+  useParserErrorRecovery: null,
+} satisfies FormattingConfigurationRecord;
+
+const importableFormattingConfigurationKeys = Object.keys(
+  formattingConfigurationsObject,
+).filter((key) => key !== "configurationFilePath");
+
 // WorkspaceConfigurationを受け取り、フォーマッタで利用する設定のみのRecordにして返す
 const extractFormattingConfigurations = (
   workspaceConfig: WorkspaceConfiguration,
-): Partial<ConfigurationRecord> => {
+): Partial<FormattingConfigurationRecord> => {
   // uroborosql-fmtのVSCode拡張で有効な設定項目のうち、明示的に設定されているもののみを取得
-  const config: Partial<ConfigurationRecord> = {};
-  for (const key of Object.keys(vsCodeConfigurationsObject)) {
+  const config: Partial<FormattingConfigurationRecord> = {};
+  for (const key of Object.keys(formattingConfigurationsObject)) {
     const value = workspaceConfig.get(key);
     if (value != null) {
       config[key] = value;
@@ -110,6 +112,15 @@ const extractFormattingConfigurations = (
 
   return restConfiguration;
 };
+
+const extractImportableFormattingConfigurations = (
+  config: Record<string, unknown>,
+): Record<string, unknown> =>
+  Object.fromEntries(
+    Object.entries(config).filter(([key]) =>
+      importableFormattingConfigurationKeys.includes(key),
+    ),
+  );
 
 const isFileExists = async (uri: Uri): Promise<boolean> => {
   try {
@@ -192,7 +203,7 @@ export const exportSettings = async (): Promise<void> => {
   const formattingConfig = extractFormattingConfigurations(vsCodeConfig);
 
   // 設定ファイルの設定を取得
-  let existingConfig: ObjectToSnake<Partial<ConfigurationRecord>>;
+  let existingConfig: ObjectToSnake<Partial<FormattingConfigurationRecord>>;
   if (await isFileExists(configFile)) {
     const file = await workspace.fs.readFile(configFile);
     existingConfig = JSON.parse(file.toString());
@@ -231,7 +242,7 @@ export const buildImportSettingsFunction =
     }
 
     const blob = await workspace.fs.readFile(configFile);
-    const config: ObjectToSnake<ConfigurationRecord> = JSON.parse(
+    const config: ObjectToSnake<FormattingConfigurationRecord> = JSON.parse(
       blob.toString(),
     );
 
@@ -248,8 +259,11 @@ export const buildImportSettingsFunction =
     );
 
     // 設定ファイルの値で更新する
+    const importedConfig = extractImportableFormattingConfigurations(
+      objectToCamel(config),
+    );
     await Promise.all(
-      Object.entries(objectToCamel(config)).map(([key, value]) =>
+      Object.entries(importedConfig).map(([key, value]) =>
         vsCodeConfig.update(key, value, target),
       ),
     );
