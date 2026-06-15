@@ -36,6 +36,18 @@ You can enable format on save for SQL by having the following values in your set
 | Settings                             | Defaults | Description                                                                                                                                                                                                                                                                                               |
 | ------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | uroborosql-fmt.configurationFilePath | null     | The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`. If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations. |
+| uroborosql-fmt.lintConfigurationFilePath | null  | The path of lint configuration file. File extension must be `.json`. If you do not specify the path and `./.uroborosqllintrc.json` exists, lint uses `./.uroborosqllintrc.json`. If no lint config can be resolved, lint diagnostics and lint quick fixes stay disabled. This feature is beta. |
+
+## Lint (Beta)
+
+The extension can also publish lint diagnostics and quick fixes for SQL files.
+
+- Lint is enabled only when a lint config can be resolved.
+- By default, the extension looks for `.uroborosqllintrc.json` in the workspace root.
+- You can also point to a specific lint config with `uroborosql-fmt.lintConfigurationFilePath`.
+- If no lint config can be resolved, the extension continues to format SQL, but does not publish lint diagnostics or lint quick fixes.
+
+To get started, create `.uroborosqllintrc.json` in the workspace root. If you use the CLI, you can generate a starter config with `uroborosql-lint init`.
 
 ### Configuration options
 
