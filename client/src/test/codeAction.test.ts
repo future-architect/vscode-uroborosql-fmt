@@ -1,12 +1,7 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 
-import {
-  activate,
-  getDocUri,
-  replaceDocumentText,
-  waitFor,
-} from "./helper";
+import { activate, getDocUri, replaceDocumentText, waitFor } from "./helper";
 
 suite("Code Action E2E", () => {
   test("Offers a quick fix that inserts disable-next-line", async () => {
@@ -39,9 +34,14 @@ suite("Code Action E2E", () => {
     const originalText = document.getText();
 
     try {
-      const diagnostic = await waitForLintDiagnostic(docUri, "no-wildcard-projection");
+      const diagnostic = await waitForLintDiagnostic(
+        docUri,
+        "no-wildcard-projection",
+      );
       const action = await waitForQuickFix(docUri, diagnostic, (candidate) => {
-        return candidate.title === "Disable no-wildcard-projection for next line";
+        return (
+          candidate.title === "Disable no-wildcard-projection for next line"
+        );
       });
 
       assert.ok(action.edit);

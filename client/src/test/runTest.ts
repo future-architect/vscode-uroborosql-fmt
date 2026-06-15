@@ -1,3 +1,4 @@
+import * as os from "os";
 import * as path from "path";
 
 import { runTests } from "@vscode/test-electron";
@@ -14,12 +15,20 @@ async function main() {
     const workspacePath =
       process.env.CODE_TESTS_WORKSPACE ??
       path.resolve(__dirname, "../../testFixture");
+    const userDataDir = path.join(os.tmpdir(), "vsqlfmt-e2e-user");
+    const extensionsDir = path.join(os.tmpdir(), "vsqlfmt-e2e-ext");
 
     await runTests({
       extensionDevelopmentPath,
       extensionTestsPath,
       vscodeExecutablePath: process.env.CODE_TESTS_VSCODE_PATH,
-      launchArgs: [workspacePath],
+      launchArgs: [
+        workspacePath,
+        "--user-data-dir",
+        userDataDir,
+        "--extensions-dir",
+        extensionsDir,
+      ],
     });
   } catch (err) {
     console.error("Failed to run tests");
