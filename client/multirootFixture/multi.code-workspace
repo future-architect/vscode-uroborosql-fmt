@@ -1,0 +1,8 @@
+{
+  "folders": [{ "path": "project-a" }, { "path": "project-b" }],
+  "settings": {
+    "[sql]": {
+      "editor.defaultFormatter": "Future.uroborosql-fmt",
+    },
+  },
+}
