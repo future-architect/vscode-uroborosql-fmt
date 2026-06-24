@@ -10,7 +10,13 @@ const collectTestFiles = async (root: string): Promise<string[]> => {
       if (entry.isDirectory()) {
         return collectTestFiles(fullPath);
       }
-      if (entry.isFile() && entry.name.endsWith(".test.js")) {
+      // multiroot.test.js needs a dedicated multi-folder workspace and runs via
+      // its own runner (runMultirootTest), so keep it out of the single-root run.
+      if (
+        entry.isFile() &&
+        entry.name.endsWith(".test.js") &&
+        entry.name !== "multiroot.test.js"
+      ) {
         return [fullPath];
       }
       return [];
