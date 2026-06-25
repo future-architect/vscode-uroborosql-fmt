@@ -4,8 +4,8 @@ import * as vscode from "vscode";
 import {
   activate,
   updateLintConfigurationFilePath,
-  waitFor,
-  waitForStability,
+  waitForDiagnostics,
+  waitForDiagnosticsStability,
 } from "../helper";
 
 const getMultirootDocUri = (p: string) =>
@@ -23,9 +23,8 @@ suite("Multi-root workspace E2E", () => {
     const docUri = getMultirootDocUri("project-a/query.sql");
     await activate(docUri);
 
-    const diagnostics = await waitFor(
-      async () => vscode.languages.getDiagnostics(docUri),
-      (value) => hasCode(value, "no-distinct"),
+    const diagnostics = await waitForDiagnostics(docUri, (value) =>
+      hasCode(value, "no-distinct"),
     );
 
     const distinct = diagnostics.find((d) => d.code === "no-distinct");
@@ -41,9 +40,8 @@ suite("Multi-root workspace E2E", () => {
 
     // project-b is the second workspace folder. Resolving to its config proves
     // resolution does not depend on workspaceFolders order.
-    const diagnostics = await waitFor(
-      async () => vscode.languages.getDiagnostics(docUri),
-      (value) => hasCode(value, "no-wildcard-projection"),
+    const diagnostics = await waitForDiagnostics(docUri, (value) =>
+      hasCode(value, "no-wildcard-projection"),
     );
 
     const wildcard = diagnostics.find(
@@ -65,8 +63,8 @@ suite("Multi-root workspace E2E", () => {
     try {
       await activate(docUri);
 
-      const diagnostics = await waitFor(
-        async () => vscode.languages.getDiagnostics(docUri),
+      const diagnostics = await waitForDiagnostics(
+        docUri,
         (value) =>
           hasCode(value, "no-distinct") &&
           hasCode(value, "no-wildcard-projection"),
@@ -89,8 +87,8 @@ suite("Multi-root workspace E2E", () => {
 
     // outside.sql lives under neither folder. It must not borrow another
     // workspace's config, so diagnostics stay empty.
-    const diagnostics = await waitForStability(
-      async () => vscode.languages.getDiagnostics(docUri),
+    const diagnostics = await waitForDiagnosticsStability(
+      docUri,
       (value) => value.length === 0,
       1_000,
       5_000,

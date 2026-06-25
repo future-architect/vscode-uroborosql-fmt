@@ -6,8 +6,10 @@ import {
   getDocUri,
   replaceDocumentText,
   updateLintConfigurationFilePath,
+  waitForDiagnostics,
+  waitForDiagnosticsStability,
+  waitForDocumentText,
   waitFor,
-  waitForStability,
 } from "./helper";
 
 suite("Code Action E2E", () => {
@@ -81,10 +83,10 @@ suite("Code Action E2E", () => {
       const applied = await vscode.workspace.applyEdit(action.edit);
       assert.strictEqual(applied, true);
 
-      const updatedDocument = await waitFor(
-        () => vscode.workspace.openTextDocument(docUri),
+      const updatedText = await waitForDocumentText(
+        docUri,
         (value) =>
-          value.getText() ===
+          value ===
           [
             "-- uroborosql-lint-disable-next-line no-distinct",
             "SELECT DISTINCT id",
@@ -94,7 +96,7 @@ suite("Code Action E2E", () => {
       );
 
       assert.strictEqual(
-        updatedDocument.getText(),
+        updatedText,
         [
           "-- uroborosql-lint-disable-next-line no-distinct",
           "SELECT DISTINCT id",
@@ -117,26 +119,17 @@ suite("Code Action E2E", () => {
     try {
       await activate(docUri);
 
-      const diagnostics = await waitForStability(
-        async () => vscode.languages.getDiagnostics(docUri),
+      const diagnostics = await waitForDiagnosticsStability(
+        docUri,
         (value) => value.length === 0,
         1_000,
         5_000,
       );
       assert.deepStrictEqual(diagnostics, []);
 
-      const actions = await waitForStability(
-        async () =>
-          requestQuickFixes(
-            docUri,
-            new vscode.Range(
-              new vscode.Position(0, 0),
-              new vscode.Position(0, 0),
-            ),
-          ),
-        (value) => value.length === 0,
-        1_000,
-        5_000,
+      const actions = await requestQuickFixes(
+        docUri,
+        new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
       );
 
       assert.deepStrictEqual(actions, []);
@@ -150,13 +143,11 @@ async function waitForLintDiagnostic(
   docUri: vscode.Uri,
   code: string,
 ): Promise<vscode.Diagnostic> {
-  const diagnostics = await waitFor(
-    async () => vscode.languages.getDiagnostics(docUri),
-    (value) =>
-      value.some(
-        (diagnostic) =>
-          diagnostic.source === "uroborosql-lint" && diagnostic.code === code,
-      ),
+  const diagnostics = await waitForDiagnostics(docUri, (value) =>
+    value.some(
+      (diagnostic) =>
+        diagnostic.source === "uroborosql-lint" && diagnostic.code === code,
+    ),
   );
 
   const diagnostic = diagnostics.find(

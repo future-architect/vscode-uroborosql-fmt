@@ -18,10 +18,6 @@ export async function activate(
   return doc;
 }
 
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 const getDocPath = (p: string) => {
   return path.resolve(__dirname, "../../testFixture", p);
 };
@@ -29,67 +25,227 @@ export const getDocUri = (p: string) => {
   return vscode.Uri.file(getDocPath(p));
 };
 
+const toTimeoutError = (message: string) => new Error(message);
+
 export async function waitFor<T>(
   getValue: () => Thenable<T> | T,
   predicate: (value: T) => boolean,
   timeoutMs: number = 10_000,
   intervalMs: number = 100,
 ): Promise<T> {
-  const deadline = Date.now() + timeoutMs;
+  return new Promise<T>((resolve, reject) => {
+    let completed = false;
+    let attemptTimer: NodeJS.Timeout | undefined;
+    const timeoutTimer = setTimeout(() => {
+      finish(reject, toTimeoutError(`Timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
 
-  while (Date.now() < deadline) {
-    const value = await getValue();
-    if (predicate(value)) {
-      return value;
-    }
-    await sleep(intervalMs);
-  }
-
-  throw new Error(`Timed out after ${timeoutMs}ms`);
-}
-
-export async function waitForStability<T>(
-  getValue: () => Thenable<T> | T,
-  predicate: (value: T) => boolean,
-  stableForMs: number,
-  timeoutMs: number = 10_000,
-  intervalMs: number = 100,
-): Promise<T> {
-  const deadline = Date.now() + timeoutMs;
-  let stableSince: number | null = null;
-
-  while (Date.now() < deadline) {
-    const value = await getValue();
-
-    if (predicate(value)) {
-      stableSince ??= Date.now();
-      if (Date.now() - stableSince >= stableForMs) {
-        return value;
+    const finish = (
+      settle: typeof resolve | typeof reject,
+      value: T | Error,
+    ) => {
+      if (completed) {
+        return;
       }
-    } else {
-      stableSince = null;
-    }
+      completed = true;
+      clearTimeout(timeoutTimer);
+      if (attemptTimer) {
+        clearTimeout(attemptTimer);
+      }
+      settle(value as T & Error);
+    };
 
-    await sleep(intervalMs);
-  }
+    const attempt = async () => {
+      if (completed) {
+        return;
+      }
 
-  throw new Error(
-    `Timed out after ${timeoutMs}ms waiting ${stableForMs}ms for a stable value`,
-  );
+      try {
+        const value = await getValue();
+        if (predicate(value)) {
+          finish(resolve, value);
+          return;
+        }
+      } catch (error) {
+        finish(
+          reject,
+          error instanceof Error ? error : new Error(String(error)),
+        );
+        return;
+      }
+
+      attemptTimer = setTimeout(attempt, intervalMs);
+    };
+
+    void attempt();
+  });
 }
 
 export async function waitForDocumentTextChange(
   docUri: vscode.Uri,
   previousText: string,
-  stableForMs: number = 500,
   timeoutMs: number = 10_000,
 ): Promise<string> {
-  return waitForStability(
-    async () => (await vscode.workspace.openTextDocument(docUri)).getText(),
+  return waitForDocumentText(
+    docUri,
     (value) => value !== previousText,
-    stableForMs,
     timeoutMs,
   );
+}
+
+export async function waitForDocumentText(
+  docUri: vscode.Uri,
+  predicate: (value: string) => boolean,
+  timeoutMs: number = 10_000,
+): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    let completed = false;
+    const timeoutTimer = setTimeout(() => {
+      finish(reject, toTimeoutError(`Timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    const subscription = vscode.workspace.onDidChangeTextDocument((event) => {
+      if (event.document.uri.toString() !== docUri.toString()) {
+        return;
+      }
+      const text = event.document.getText();
+      if (predicate(text)) {
+        finish(resolve, text);
+      }
+    });
+
+    const finish = (
+      settle: typeof resolve | typeof reject,
+      value: string | Error,
+    ) => {
+      if (completed) {
+        return;
+      }
+      completed = true;
+      clearTimeout(timeoutTimer);
+      subscription.dispose();
+      settle(value as string & Error);
+    };
+
+    void vscode.workspace.openTextDocument(docUri).then(
+      (document) => {
+        const text = document.getText();
+        if (predicate(text)) {
+          finish(resolve, text);
+        }
+      },
+      (error) => {
+        finish(
+          reject,
+          error instanceof Error ? error : new Error(String(error)),
+        );
+      },
+    );
+  });
+}
+
+export async function waitForDiagnostics(
+  docUri: vscode.Uri,
+  predicate: (value: readonly vscode.Diagnostic[]) => boolean,
+  timeoutMs: number = 10_000,
+): Promise<readonly vscode.Diagnostic[]> {
+  return new Promise<readonly vscode.Diagnostic[]>((resolve, reject) => {
+    let completed = false;
+    const timeoutTimer = setTimeout(() => {
+      finish(reject, toTimeoutError(`Timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    const evaluate = () => {
+      const diagnostics = vscode.languages.getDiagnostics(docUri);
+      if (predicate(diagnostics)) {
+        finish(resolve, diagnostics);
+      }
+    };
+
+    const subscription = vscode.languages.onDidChangeDiagnostics((event) => {
+      if (event.uris.some((uri) => uri.toString() === docUri.toString())) {
+        evaluate();
+      }
+    });
+
+    const finish = (
+      settle: typeof resolve | typeof reject,
+      value: readonly vscode.Diagnostic[] | Error,
+    ) => {
+      if (completed) {
+        return;
+      }
+      completed = true;
+      clearTimeout(timeoutTimer);
+      subscription.dispose();
+      settle(value as readonly vscode.Diagnostic[] & Error);
+    };
+
+    evaluate();
+  });
+}
+
+export async function waitForDiagnosticsStability(
+  docUri: vscode.Uri,
+  predicate: (value: readonly vscode.Diagnostic[]) => boolean,
+  stableForMs: number,
+  timeoutMs: number = 10_000,
+): Promise<readonly vscode.Diagnostic[]> {
+  return new Promise<readonly vscode.Diagnostic[]>((resolve, reject) => {
+    let completed = false;
+    let stableTimer: NodeJS.Timeout | undefined;
+    const timeoutTimer = setTimeout(() => {
+      finish(
+        reject,
+        toTimeoutError(
+          `Timed out after ${timeoutMs}ms waiting ${stableForMs}ms for stable diagnostics`,
+        ),
+      );
+    }, timeoutMs);
+
+    const clearStableTimer = () => {
+      if (stableTimer) {
+        clearTimeout(stableTimer);
+        stableTimer = undefined;
+      }
+    };
+
+    const evaluate = () => {
+      const diagnostics = vscode.languages.getDiagnostics(docUri);
+
+      if (!predicate(diagnostics)) {
+        clearStableTimer();
+        return;
+      }
+
+      clearStableTimer();
+      stableTimer = setTimeout(() => {
+        finish(resolve, vscode.languages.getDiagnostics(docUri));
+      }, stableForMs);
+    };
+
+    const subscription = vscode.languages.onDidChangeDiagnostics((event) => {
+      if (event.uris.some((uri) => uri.toString() === docUri.toString())) {
+        evaluate();
+      }
+    });
+
+    const finish = (
+      settle: typeof resolve | typeof reject,
+      value: readonly vscode.Diagnostic[] | Error,
+    ) => {
+      if (completed) {
+        return;
+      }
+      completed = true;
+      clearTimeout(timeoutTimer);
+      clearStableTimer();
+      subscription.dispose();
+      settle(value as readonly vscode.Diagnostic[] & Error);
+    };
+
+    evaluate();
+  });
 }
 
 export async function replaceDocumentText(

@@ -1,6 +1,10 @@
 import * as assert from "assert";
-import * as vscode from "vscode";
-import { activate, getDocUri, replaceDocumentText, waitFor } from "./helper";
+import {
+  activate,
+  getDocUri,
+  replaceDocumentText,
+  waitForDiagnostics,
+} from "./helper";
 
 suite("Should get diagnostics", () => {
   const docUri = getDocUri("diagnostics.sql");
@@ -12,8 +16,8 @@ suite("Should get diagnostics", () => {
     try {
       await replaceDocumentText(document, "select from");
 
-      const actualDiagnostics = await waitFor(
-        async () => vscode.languages.getDiagnostics(docUri),
+      const actualDiagnostics = await waitForDiagnostics(
+        docUri,
         (value) => value.length > 0,
       );
 

@@ -3,9 +3,9 @@ import * as vscode from "vscode";
 import {
   activate,
   getDocUri,
+  waitForDiagnostics,
+  waitForDiagnosticsStability,
   updateLintConfigurationFilePath,
-  waitFor,
-  waitForStability,
 } from "./helper";
 
 suite("Lint E2E", () => {
@@ -13,9 +13,8 @@ suite("Lint E2E", () => {
     const docUri = getDocUri("lint/distinct.sql");
     await activate(docUri);
 
-    const diagnostics = await waitFor(
-      async () => vscode.languages.getDiagnostics(docUri),
-      (value) => value.some((diagnostic) => diagnostic.code === "no-distinct"),
+    const diagnostics = await waitForDiagnostics(docUri, (value) =>
+      value.some((diagnostic) => diagnostic.code === "no-distinct"),
     );
 
     const distinctDiagnostic = diagnostics.find(
@@ -35,12 +34,8 @@ suite("Lint E2E", () => {
     const docUri = getDocUri("lint/wildcard.sql");
     await activate(docUri);
 
-    const diagnostics = await waitFor(
-      async () => vscode.languages.getDiagnostics(docUri),
-      (value) =>
-        value.some(
-          (diagnostic) => diagnostic.code === "no-wildcard-projection",
-        ),
+    const diagnostics = await waitForDiagnostics(docUri, (value) =>
+      value.some((diagnostic) => diagnostic.code === "no-wildcard-projection"),
     );
 
     const wildcardDiagnostic = diagnostics.find(
@@ -60,8 +55,8 @@ suite("Lint E2E", () => {
     const docUri = getDocUri("lint/override-warning.sql");
     await activate(docUri);
 
-    const diagnostics = await waitFor(
-      async () => vscode.languages.getDiagnostics(docUri),
+    const diagnostics = await waitForDiagnostics(
+      docUri,
       (value) =>
         value.some((diagnostic) => diagnostic.code === "no-distinct") &&
         value.some(
@@ -91,19 +86,15 @@ suite("Lint E2E", () => {
   test("Ignores files matched by .uroborosqllintrc.json", async () => {
     const baselineUri = getDocUri("lint/wildcard.sql");
     await activate(baselineUri);
-    await waitFor(
-      async () => vscode.languages.getDiagnostics(baselineUri),
-      (value) =>
-        value.some(
-          (diagnostic) => diagnostic.code === "no-wildcard-projection",
-        ),
+    await waitForDiagnostics(baselineUri, (value) =>
+      value.some((diagnostic) => diagnostic.code === "no-wildcard-projection"),
     );
 
     const ignoredUri = getDocUri("lint/ignored.sql");
     await activate(ignoredUri);
 
-    const diagnostics = await waitForStability(
-      async () => vscode.languages.getDiagnostics(ignoredUri),
+    const diagnostics = await waitForDiagnosticsStability(
+      ignoredUri,
       (value) => value.length === 0,
       1_000,
       5_000,
@@ -118,12 +109,10 @@ suite("Lint E2E", () => {
     try {
       await activate(docUri);
 
-      const diagnostics = await waitFor(
-        async () => vscode.languages.getDiagnostics(docUri),
-        (value) =>
-          value.some(
-            (diagnostic) => diagnostic.code === "no-wildcard-projection",
-          ),
+      const diagnostics = await waitForDiagnostics(docUri, (value) =>
+        value.some(
+          (diagnostic) => diagnostic.code === "no-wildcard-projection",
+        ),
       );
 
       assert.ok(
@@ -149,8 +138,8 @@ suite("Lint E2E", () => {
     try {
       await activate(docUri);
 
-      const diagnostics = await waitForStability(
-        async () => vscode.languages.getDiagnostics(docUri),
+      const diagnostics = await waitForDiagnosticsStability(
+        docUri,
         (value) => value.length === 0,
         1_000,
         5_000,
