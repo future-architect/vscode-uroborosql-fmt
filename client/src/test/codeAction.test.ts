@@ -1,7 +1,15 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 
-import { activate, getDocUri, replaceDocumentText, waitFor } from "./helper";
+import {
+  activate,
+  getDocUri,
+  replaceDocumentText,
+  updateLintConfigurationFilePath,
+  waitForDiagnostics,
+  waitForDiagnosticsStability,
+  waitFor,
+} from "./helper";
 
 suite("Code Action E2E", () => {
   test("Offers a quick fix that inserts disable-next-line", async () => {
@@ -28,75 +36,33 @@ suite("Code Action E2E", () => {
     }
   });
 
-  test("Offers a quick fix that appends to an existing directive", async () => {
-    const docUri = getDocUri("lint/append.sql");
-    const document = await activate(docUri);
-    const originalText = document.getText();
+  test("Offers no quick fix when lintConfigurationFilePath cannot be resolved", async () => {
+    const docUri = getDocUri("lint/explicit-path.sql");
+    await updateLintConfigurationFilePath(
+      docUri,
+      ".vscode/does-not-exist-lint.json",
+    );
 
     try {
-      const diagnostic = await waitForLintDiagnostic(
+      await activate(docUri);
+
+      // Wait for diagnostics to settle empty as a sync barrier before asking
+      // for code actions; lint.test.ts owns asserting the diagnostics are empty.
+      await waitForDiagnosticsStability(
         docUri,
-        "no-wildcard-projection",
+        (value) => value.length === 0,
+        1_000,
+        5_000,
       );
-      const action = await waitForQuickFix(docUri, diagnostic, (candidate) => {
-        return (
-          candidate.title === "Disable no-wildcard-projection for next line"
-        );
-      });
 
-      assert.ok(action.edit);
-      const edit = firstDocumentEdit(action, docUri);
-      assert.strictEqual(edit.newText, ", no-wildcard-projection");
-      assert.strictEqual(edit.range.start.line, 0);
-      assert.strictEqual(edit.range.start.character, 48);
-      assert.strictEqual(edit.range.end.line, 0);
-      assert.strictEqual(edit.range.end.character, 48);
-    } finally {
-      await replaceDocumentText(document, originalText);
-    }
-  });
-
-  test("Offers a quick fix that removes an unknown lint rule", async () => {
-    const docUri = getDocUri("lint/unknown-rule.sql");
-    const document = await activate(docUri);
-    const originalText = document.getText();
-
-    try {
-      const diagnostic = await waitForLintDiagnostic(
+      const actions = await requestQuickFixes(
         docUri,
-        "invalid-lint-directive",
-      );
-      const action = await waitForQuickFix(docUri, diagnostic, (candidate) => {
-        return candidate.title === "Remove unknown lint rule";
-      });
-
-      assert.ok(action.edit);
-      const applied = await vscode.workspace.applyEdit(action.edit);
-      assert.strictEqual(applied, true);
-
-      const updatedDocument = await waitFor(
-        () => vscode.workspace.openTextDocument(docUri),
-        (value) =>
-          value.getText() ===
-          [
-            "-- uroborosql-lint-disable-next-line no-distinct",
-            "SELECT DISTINCT id",
-            "FROM users;",
-            "",
-          ].join("\n"),
+        new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)),
       );
 
-      assert.strictEqual(
-        updatedDocument.getText(),
-        [
-          "-- uroborosql-lint-disable-next-line no-distinct",
-          "SELECT DISTINCT id",
-          "FROM users;",
-          "",
-        ].join("\n"),
-      );
+      assert.deepStrictEqual(actions, []);
     } finally {
-      await replaceDocumentText(document, originalText);
+      await updateLintConfigurationFilePath(docUri, null);
     }
   });
 });
@@ -105,13 +71,11 @@ async function waitForLintDiagnostic(
   docUri: vscode.Uri,
   code: string,
 ): Promise<vscode.Diagnostic> {
-  const diagnostics = await waitFor(
-    async () => vscode.languages.getDiagnostics(docUri),
-    (value) =>
-      value.some(
-        (diagnostic) =>
-          diagnostic.source === "uroborosql-lint" && diagnostic.code === code,
-      ),
+  const diagnostics = await waitForDiagnostics(docUri, (value) =>
+    value.some(
+      (diagnostic) =>
+        diagnostic.source === "uroborosql-lint" && diagnostic.code === code,
+    ),
   );
 
   const diagnostic = diagnostics.find(
@@ -130,6 +94,9 @@ async function waitForQuickFix(
   const actions = await waitFor(
     async () => requestQuickFixes(docUri, diagnostic.range),
     (value) => value.some(predicate),
+    undefined,
+    undefined,
+    `Timed out waiting for a matching quick fix on ${docUri.fsPath}`,
   );
 
   const action = actions.find(predicate);

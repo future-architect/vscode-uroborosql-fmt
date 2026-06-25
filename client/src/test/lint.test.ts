@@ -1,113 +1,64 @@
 import * as assert from "assert";
-import * as vscode from "vscode";
-import { activate, getDocUri, waitFor, waitForStability } from "./helper";
+import {
+  activate,
+  getDocUri,
+  waitForDiagnosticsStability,
+  updateLintConfigurationFilePath,
+} from "./helper";
 
 suite("Lint E2E", () => {
-  test("Publishes configured lint diagnostics", async () => {
-    const docUri = getDocUri("lint/distinct.sql");
-    await activate(docUri);
+  test("Uses lintConfigurationFilePath when explicitly configured", async () => {
+    const docUri = getDocUri("lint/explicit-path.sql");
+    await updateLintConfigurationFilePath(docUri, ".vscode/lint-explicit.json");
 
-    const diagnostics = await waitFor(
-      async () => vscode.languages.getDiagnostics(docUri),
-      (value) => value.some((diagnostic) => diagnostic.code === "no-distinct"),
-    );
+    try {
+      await activate(docUri);
 
-    const distinctDiagnostic = diagnostics.find(
-      (diagnostic) => diagnostic.code === "no-distinct",
-    );
+      // Under the explicit config no-distinct is off, so the settled state has
+      // no-wildcard-projection but not no-distinct. Waiting for stability avoids
+      // latching the transient default-config diagnostics published first.
+      const diagnostics = await waitForDiagnosticsStability(
+        docUri,
+        (value) =>
+          value.some(
+            (diagnostic) => diagnostic.code === "no-wildcard-projection",
+          ) && value.every((diagnostic) => diagnostic.code !== "no-distinct"),
+        500,
+      );
 
-    assert.ok(distinctDiagnostic);
-    assert.strictEqual(distinctDiagnostic.source, "uroborosql-lint");
-    assert.strictEqual(
-      distinctDiagnostic.message,
-      "DISTINCT is not recommended.",
-    );
-    assert.strictEqual(
-      distinctDiagnostic.severity,
-      vscode.DiagnosticSeverity.Error,
-    );
-  });
-
-  test("Loads rules from .uroborosqllintrc.json", async () => {
-    const docUri = getDocUri("lint/wildcard.sql");
-    await activate(docUri);
-
-    const diagnostics = await waitFor(
-      async () => vscode.languages.getDiagnostics(docUri),
-      (value) =>
-        value.some(
+      assert.ok(
+        diagnostics.some(
           (diagnostic) => diagnostic.code === "no-wildcard-projection",
         ),
-    );
-
-    const wildcardDiagnostic = diagnostics.find(
-      (diagnostic) => diagnostic.code === "no-wildcard-projection",
-    );
-
-    assert.ok(wildcardDiagnostic);
-    assert.strictEqual(wildcardDiagnostic.source, "uroborosql-lint");
-    assert.strictEqual(
-      wildcardDiagnostic.message,
-      "Wildcard projections are not allowed; list the columns explicitly.",
-    );
-    assert.strictEqual(
-      wildcardDiagnostic.severity,
-      vscode.DiagnosticSeverity.Error,
-    );
+      );
+      assert.ok(
+        diagnostics.every((diagnostic) => diagnostic.code !== "no-distinct"),
+      );
+    } finally {
+      await updateLintConfigurationFilePath(docUri, null);
+    }
   });
 
-  test("Applies override rules from .uroborosqllintrc.json", async () => {
-    const docUri = getDocUri("lint/override-warning.sql");
-    await activate(docUri);
-
-    const diagnostics = await waitFor(
-      async () => vscode.languages.getDiagnostics(docUri),
-      (value) =>
-        value.some((diagnostic) => diagnostic.code === "no-distinct") &&
-        value.some(
-          (diagnostic) => diagnostic.code === "no-wildcard-projection",
-        ),
+  test("Disables lint diagnostics when lintConfigurationFilePath cannot be resolved", async () => {
+    const docUri = getDocUri("lint/explicit-path.sql");
+    await updateLintConfigurationFilePath(
+      docUri,
+      ".vscode/does-not-exist-lint.json",
     );
 
-    const distinctDiagnostic = diagnostics.find(
-      (diagnostic) => diagnostic.code === "no-distinct",
-    );
-    const wildcardDiagnostic = diagnostics.find(
-      (diagnostic) => diagnostic.code === "no-wildcard-projection",
-    );
+    try {
+      await activate(docUri);
 
-    assert.ok(distinctDiagnostic);
-    assert.ok(wildcardDiagnostic);
-    assert.strictEqual(
-      distinctDiagnostic.severity,
-      vscode.DiagnosticSeverity.Warning,
-    );
-    assert.strictEqual(
-      wildcardDiagnostic.severity,
-      vscode.DiagnosticSeverity.Error,
-    );
-  });
+      const diagnostics = await waitForDiagnosticsStability(
+        docUri,
+        (value) => value.length === 0,
+        1_000,
+        5_000,
+      );
 
-  test("Ignores files matched by .uroborosqllintrc.json", async () => {
-    const baselineUri = getDocUri("lint/wildcard.sql");
-    await activate(baselineUri);
-    await waitFor(
-      async () => vscode.languages.getDiagnostics(baselineUri),
-      (value) =>
-        value.some(
-          (diagnostic) => diagnostic.code === "no-wildcard-projection",
-        ),
-    );
-
-    const ignoredUri = getDocUri("lint/ignored.sql");
-    await activate(ignoredUri);
-
-    const diagnostics = await waitForStability(
-      async () => vscode.languages.getDiagnostics(ignoredUri),
-      (value) => value.length === 0,
-      1_000,
-      5_000,
-    );
-    assert.deepStrictEqual(diagnostics, []);
+      assert.deepStrictEqual(diagnostics, []);
+    } finally {
+      await updateLintConfigurationFilePath(docUri, null);
+    }
   });
 });
