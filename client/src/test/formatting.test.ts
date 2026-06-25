@@ -1,23 +1,29 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { activate, executeCommandWithWait, getDocUri, waitFor } from "./helper";
+import { activate, getDocUri, waitForDocumentTextChange } from "./helper";
 
 suite("Should format SQL documents", () => {
   const docUri = getDocUri("format.sql");
+  const expectedFullDocument = ["select", "\ta\tas\ta", "from", "\tb", ""].join(
+    "\n",
+  );
+  const expectedSelectedRange = [
+    "select",
+    "\ta\tas\ta",
+    "from",
+    "\tb",
+    ";",
+    "",
+  ].join("\n");
 
   test("Formats an entire SQL document", async () => {
     const document = await activate(docUri);
     const original = document.getText();
-    await executeCommandWithWait("editor.action.formatDocument");
-    const formattedDocument = await waitFor(
-      () => vscode.workspace.openTextDocument(docUri),
-      (value) => value.getText() !== original,
-    );
-    const formatted = formattedDocument.getText();
+    await vscode.commands.executeCommand("editor.action.formatDocument");
+    const formatted = await waitForDocumentTextChange(docUri, original);
 
     assert.notStrictEqual(formatted, original);
-    assert.match(formatted, /from\n\tb/);
-    assert.match(formatted, /a\tas\ta/);
+    assert.strictEqual(formatted, expectedFullDocument);
   });
 
   test("Formats a selected SQL range", async () => {
@@ -33,15 +39,10 @@ suite("Should format SQL documents", () => {
       fullRange.end,
     );
 
-    await executeCommandWithWait("editor.action.formatSelection");
-    const formattedDocument = await waitFor(
-      () => vscode.workspace.openTextDocument(rangeUri),
-      (value) => value.getText() !== original,
-    );
-    const formatted = formattedDocument.getText();
+    await vscode.commands.executeCommand("editor.action.formatSelection");
+    const formatted = await waitForDocumentTextChange(rangeUri, original);
 
     assert.notStrictEqual(formatted, original);
-    assert.match(formatted, /from\n\tb/);
-    assert.match(formatted, /a\tas\ta/);
+    assert.strictEqual(formatted, expectedSelectedRange);
   });
 });

@@ -1,7 +1,7 @@
-import * as os from "os";
 import * as path from "path";
 
 import { runTests } from "@vscode/test-electron";
+import { withIsolatedTestDirs } from "./testRunEnvironment";
 
 async function main() {
   try {
@@ -18,20 +18,19 @@ async function main() {
     const workspacePath =
       process.env.CODE_TESTS_WORKSPACE ??
       path.resolve(__dirname, "../../multirootFixture/multi.code-workspace");
-    const userDataDir = path.join(os.tmpdir(), "vsqlfmt-e2e-multiroot-user");
-    const extensionsDir = path.join(os.tmpdir(), "vsqlfmt-e2e-multiroot-ext");
-
-    await runTests({
-      extensionDevelopmentPath,
-      extensionTestsPath,
-      vscodeExecutablePath: process.env.CODE_TESTS_VSCODE_PATH,
-      launchArgs: [
-        workspacePath,
-        "--user-data-dir",
-        userDataDir,
-        "--extensions-dir",
-        extensionsDir,
-      ],
+    await withIsolatedTestDirs("vsqlfmt-e2e-multiroot", async (dirs) => {
+      await runTests({
+        extensionDevelopmentPath,
+        extensionTestsPath,
+        vscodeExecutablePath: process.env.CODE_TESTS_VSCODE_PATH,
+        launchArgs: [
+          workspacePath,
+          "--user-data-dir",
+          dirs.userDataDir,
+          "--extensions-dir",
+          dirs.extensionsDir,
+        ],
+      });
     });
   } catch (err) {
     console.error("Failed to run tests");

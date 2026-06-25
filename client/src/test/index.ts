@@ -2,21 +2,20 @@ import { readdir } from "fs/promises";
 import * as path from "path";
 import * as Mocha from "mocha";
 
+const dedicatedSuiteDirName = "multi-root";
+
 const collectTestFiles = async (root: string): Promise<string[]> => {
   const entries = await readdir(root, { withFileTypes: true });
   const nestedFiles = await Promise.all(
     entries.map(async (entry) => {
       const fullPath = path.resolve(root, entry.name);
       if (entry.isDirectory()) {
+        if (entry.name === dedicatedSuiteDirName) {
+          return [];
+        }
         return collectTestFiles(fullPath);
       }
-      // multiroot.test.js needs a dedicated multi-folder workspace and runs via
-      // its own runner (runMultirootTest), so keep it out of the single-root run.
-      if (
-        entry.isFile() &&
-        entry.name.endsWith(".test.js") &&
-        entry.name !== "multiroot.test.js"
-      ) {
+      if (entry.isFile() && entry.name.endsWith(".test.js")) {
         return [fullPath];
       }
       return [];

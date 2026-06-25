@@ -1,7 +1,14 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
 
-import { activate, getDocUri, replaceDocumentText, waitFor } from "./helper";
+import {
+  activate,
+  getDocUri,
+  replaceDocumentText,
+  updateLintConfigurationFilePath,
+  waitFor,
+  waitForStability,
+} from "./helper";
 
 suite("Code Action E2E", () => {
   test("Offers a quick fix that inserts disable-next-line", async () => {
@@ -97,6 +104,44 @@ suite("Code Action E2E", () => {
       );
     } finally {
       await replaceDocumentText(document, originalText);
+    }
+  });
+
+  test("Offers no quick fix when lintConfigurationFilePath cannot be resolved", async () => {
+    const docUri = getDocUri("lint/explicit-path.sql");
+    await updateLintConfigurationFilePath(
+      docUri,
+      ".vscode/does-not-exist-lint.json",
+    );
+
+    try {
+      await activate(docUri);
+
+      const diagnostics = await waitForStability(
+        async () => vscode.languages.getDiagnostics(docUri),
+        (value) => value.length === 0,
+        1_000,
+        5_000,
+      );
+      assert.deepStrictEqual(diagnostics, []);
+
+      const actions = await waitForStability(
+        async () =>
+          requestQuickFixes(
+            docUri,
+            new vscode.Range(
+              new vscode.Position(0, 0),
+              new vscode.Position(0, 0),
+            ),
+          ),
+        (value) => value.length === 0,
+        1_000,
+        5_000,
+      );
+
+      assert.deepStrictEqual(actions, []);
+    } finally {
+      await updateLintConfigurationFilePath(docUri, "");
     }
   });
 });

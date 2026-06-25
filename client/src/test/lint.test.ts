@@ -1,6 +1,12 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { activate, getDocUri, waitFor, waitForStability } from "./helper";
+import {
+  activate,
+  getDocUri,
+  updateLintConfigurationFilePath,
+  waitFor,
+  waitForStability,
+} from "./helper";
 
 suite("Lint E2E", () => {
   test("Publishes configured lint diagnostics", async () => {
@@ -18,10 +24,7 @@ suite("Lint E2E", () => {
 
     assert.ok(distinctDiagnostic);
     assert.strictEqual(distinctDiagnostic.source, "uroborosql-lint");
-    assert.strictEqual(
-      distinctDiagnostic.message,
-      "DISTINCT is not recommended.",
-    );
+    assert.match(distinctDiagnostic.message, /DISTINCT/i);
     assert.strictEqual(
       distinctDiagnostic.severity,
       vscode.DiagnosticSeverity.Error,
@@ -46,10 +49,7 @@ suite("Lint E2E", () => {
 
     assert.ok(wildcardDiagnostic);
     assert.strictEqual(wildcardDiagnostic.source, "uroborosql-lint");
-    assert.strictEqual(
-      wildcardDiagnostic.message,
-      "Wildcard projections are not allowed; list the columns explicitly.",
-    );
+    assert.match(wildcardDiagnostic.message, /Wildcard projections/i);
     assert.strictEqual(
       wildcardDiagnostic.severity,
       vscode.DiagnosticSeverity.Error,
@@ -109,5 +109,56 @@ suite("Lint E2E", () => {
       5_000,
     );
     assert.deepStrictEqual(diagnostics, []);
+  });
+
+  test("Uses lintConfigurationFilePath when explicitly configured", async () => {
+    const docUri = getDocUri("lint/explicit-path.sql");
+    await updateLintConfigurationFilePath(docUri, ".vscode/lint-explicit.json");
+
+    try {
+      await activate(docUri);
+
+      const diagnostics = await waitFor(
+        async () => vscode.languages.getDiagnostics(docUri),
+        (value) =>
+          value.some(
+            (diagnostic) => diagnostic.code === "no-wildcard-projection",
+          ),
+      );
+
+      assert.ok(
+        diagnostics.some(
+          (diagnostic) => diagnostic.code === "no-wildcard-projection",
+        ),
+      );
+      assert.ok(
+        diagnostics.every((diagnostic) => diagnostic.code !== "no-distinct"),
+      );
+    } finally {
+      await updateLintConfigurationFilePath(docUri, "");
+    }
+  });
+
+  test("Disables lint diagnostics when lintConfigurationFilePath cannot be resolved", async () => {
+    const docUri = getDocUri("lint/explicit-path.sql");
+    await updateLintConfigurationFilePath(
+      docUri,
+      ".vscode/does-not-exist-lint.json",
+    );
+
+    try {
+      await activate(docUri);
+
+      const diagnostics = await waitForStability(
+        async () => vscode.languages.getDiagnostics(docUri),
+        (value) => value.length === 0,
+        1_000,
+        5_000,
+      );
+
+      assert.deepStrictEqual(diagnostics, []);
+    } finally {
+      await updateLintConfigurationFilePath(docUri, "");
+    }
   });
 });

@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "no-distinct": "off",
+    "no-wildcard-projection": "error"
+  }
+}

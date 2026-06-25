@@ -22,15 +22,6 @@ async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function executeCommandWithWait(
-  command: string,
-  ...args: unknown[]
-): Promise<void> {
-  await sleep(500);
-  await vscode.commands.executeCommand(command, ...args);
-  await sleep(1000);
-}
-
 const getDocPath = (p: string) => {
   return path.resolve(__dirname, "../../testFixture", p);
 };
@@ -87,6 +78,20 @@ export async function waitForStability<T>(
   );
 }
 
+export async function waitForDocumentTextChange(
+  docUri: vscode.Uri,
+  previousText: string,
+  stableForMs: number = 500,
+  timeoutMs: number = 10_000,
+): Promise<string> {
+  return waitForStability(
+    async () => (await vscode.workspace.openTextDocument(docUri)).getText(),
+    (value) => value !== previousText,
+    stableForMs,
+    timeoutMs,
+  );
+}
+
 export async function replaceDocumentText(
   document: vscode.TextDocument,
   content: string,
@@ -106,6 +111,7 @@ export async function replaceDocumentText(
 
 export async function captureErrorMessages<T>(
   callback: () => Promise<T>,
+  expectedMessage?: string | RegExp,
 ): Promise<{ result: T; messages: string[] }> {
   const messages: string[] = [];
   const original = vscode.window.showErrorMessage;
@@ -120,8 +126,29 @@ export async function captureErrorMessages<T>(
 
   try {
     const result = await callback();
+    if (expectedMessage !== undefined) {
+      await waitFor(
+        () => messages,
+        (value) =>
+          value.some((message) =>
+            typeof expectedMessage === "string"
+              ? message === expectedMessage
+              : expectedMessage.test(message),
+          ),
+      );
+    }
     return { result, messages };
   } finally {
     windowWithStub.showErrorMessage = original;
   }
+}
+
+export async function updateLintConfigurationFilePath(
+  docUri: vscode.Uri,
+  value: string,
+  target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace,
+): Promise<void> {
+  await vscode.workspace
+    .getConfiguration("uroborosql-fmt", docUri)
+    .update("lintConfigurationFilePath", value, target);
 }

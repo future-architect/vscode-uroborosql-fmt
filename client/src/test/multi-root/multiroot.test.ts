@@ -1,10 +1,15 @@
 import * as assert from "assert";
 import * as path from "path";
 import * as vscode from "vscode";
-import { activate, waitFor, waitForStability } from "./helper";
+import {
+  activate,
+  updateLintConfigurationFilePath,
+  waitFor,
+  waitForStability,
+} from "../helper";
 
 const getMultirootDocUri = (p: string) =>
-  vscode.Uri.file(path.resolve(__dirname, "../../multirootFixture", p));
+  vscode.Uri.file(path.resolve(__dirname, "../../../multirootFixture", p));
 
 const hasCode = (diagnostics: readonly vscode.Diagnostic[], code: string) =>
   diagnostics.some((diagnostic) => diagnostic.code === code);
@@ -47,6 +52,35 @@ suite("Multi-root workspace E2E", () => {
     assert.ok(wildcard);
     assert.strictEqual(wildcard.severity, vscode.DiagnosticSeverity.Error);
     assert.ok(!hasCode(diagnostics, "no-distinct"));
+  });
+
+  test("non-first folder resolves its explicit lint config without borrowing a sibling root", async () => {
+    const docUri = getMultirootDocUri("project-b/query.sql");
+    await updateLintConfigurationFilePath(
+      docUri,
+      "custom-lint.json",
+      vscode.ConfigurationTarget.Workspace,
+    );
+
+    try {
+      await activate(docUri);
+
+      const diagnostics = await waitFor(
+        async () => vscode.languages.getDiagnostics(docUri),
+        (value) =>
+          hasCode(value, "no-distinct") &&
+          hasCode(value, "no-wildcard-projection"),
+      );
+
+      assert.ok(hasCode(diagnostics, "no-distinct"));
+      assert.ok(hasCode(diagnostics, "no-wildcard-projection"));
+    } finally {
+      await updateLintConfigurationFilePath(
+        docUri,
+        "",
+        vscode.ConfigurationTarget.Workspace,
+      );
+    }
   });
 
   test("document outside every workspace folder gets no diagnostics", async () => {
