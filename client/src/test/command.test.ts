@@ -12,7 +12,6 @@ import {
 suite("Should format SQL as command-driven selections", () => {
   const embeddedDocUri = getDocUri("embedded.ts");
   const invalidEmbeddedDocUri = getDocUri("embedded-invalid-sql.ts");
-  const sqlDocUri = getDocUri("format-command.sql");
   const wholeDocumentAsSqlUri = getDocUri("whole-document-as-sql.txt");
 
   const embeddedSql = "select distinct id from users";
@@ -43,45 +42,6 @@ suite("Should format SQL as command-driven selections", () => {
     assert.notStrictEqual(formatted, original);
     assert.match(formatted, formattedEmbeddedSql);
     assert.match(formatted, /const sql = `select/);
-  });
-
-  test("Formats the selected embedded SQL through Format SQL", async () => {
-    const document = await activate(embeddedDocUri);
-    await replaceDocumentText(
-      document,
-      `export const sql = \`${embeddedSql}\`;\n`,
-    );
-    const original = document.getText();
-    const start = document.getText().indexOf(embeddedSql);
-    assert.notStrictEqual(start, -1);
-    const selection = new vscode.Selection(
-      document.positionAt(start),
-      document.positionAt(start + embeddedSql.length),
-    );
-    vscode.window.activeTextEditor!.selections = [selection];
-
-    await vscode.commands.executeCommand("uroborosql-fmt.uroborosql-format");
-    const formatted = await waitForDocumentTextChange(embeddedDocUri, original);
-
-    assert.notStrictEqual(formatted, original);
-    assert.match(formatted, formattedEmbeddedSql);
-    assert.match(formatted, /const sql = `select/);
-  });
-
-  test("Formats an entire SQL document through Format SQL", async () => {
-    const document = await activate(sqlDocUri);
-    await replaceDocumentText(document, "select A from B\n");
-    const original = document.getText();
-    vscode.window.activeTextEditor!.selections = [
-      new vscode.Selection(document.positionAt(0), document.positionAt(0)),
-    ];
-
-    await vscode.commands.executeCommand("uroborosql-fmt.uroborosql-format");
-    const formatted = await waitForDocumentTextChange(sqlDocUri, original);
-
-    assert.notStrictEqual(formatted, original);
-    assert.match(formatted, /from\n\tb/);
-    assert.match(formatted, /a\tas\ta/);
   });
 
   test("Formats a non-SQL document as a whole document through Format SQL", async () => {

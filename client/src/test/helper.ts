@@ -309,7 +309,7 @@ export async function captureErrorMessages<T>(
 
 export async function updateLintConfigurationFilePath(
   docUri: vscode.Uri,
-  value: string,
+  value: string | null,
   target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace,
 ): Promise<void> {
   await vscode.workspace

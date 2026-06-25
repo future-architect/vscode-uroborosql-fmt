@@ -2,5 +2,5 @@
   "[sql]": {
     "editor.defaultFormatter": "Future.uroborosql-fmt"
   },
-  "uroborosql-fmt.lintConfigurationFilePath": ""
+  "uroborosql-fmt.lintConfigurationFilePath": null
 }

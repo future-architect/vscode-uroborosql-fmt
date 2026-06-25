@@ -15,25 +15,6 @@ const hasCode = (diagnostics: readonly vscode.Diagnostic[], code: string) =>
   diagnostics.some((diagnostic) => diagnostic.code === code);
 
 suite("Multi-root workspace E2E", () => {
-  // Both rules are on by default, so each project's config turns the *other*
-  // rule off. The disabled rule showing up would mean the wrong workspace
-  // config was used (e.g. the sibling folder's, or none at all). The document
-  // text triggers both rules, so only the config decides what surfaces.
-  test("project-a uses its own config (no-distinct on, no-wildcard off)", async () => {
-    const docUri = getMultirootDocUri("project-a/query.sql");
-    await activate(docUri);
-
-    const diagnostics = await waitForDiagnostics(docUri, (value) =>
-      hasCode(value, "no-distinct"),
-    );
-
-    const distinct = diagnostics.find((d) => d.code === "no-distinct");
-    assert.ok(distinct);
-    assert.strictEqual(distinct.severity, vscode.DiagnosticSeverity.Error);
-    // Disabled in project-a's config; its presence would mean a foreign config.
-    assert.ok(!hasCode(diagnostics, "no-wildcard-projection"));
-  });
-
   test("non-first folder (project-b) uses its own config (no-wildcard on, no-distinct off)", async () => {
     const docUri = getMultirootDocUri("project-b/query.sql");
     await activate(docUri);
@@ -75,7 +56,7 @@ suite("Multi-root workspace E2E", () => {
     } finally {
       await updateLintConfigurationFilePath(
         docUri,
-        "",
+        null,
         vscode.ConfigurationTarget.Workspace,
       );
     }

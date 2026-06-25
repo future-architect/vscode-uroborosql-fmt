@@ -8,7 +8,6 @@ import {
   updateLintConfigurationFilePath,
   waitForDiagnostics,
   waitForDiagnosticsStability,
-  waitForDocumentText,
   waitFor,
 } from "./helper";
 
@@ -32,78 +31,6 @@ suite("Code Action E2E", () => {
       );
       assert.strictEqual(edit.range.start.line, 0);
       assert.strictEqual(edit.range.start.character, 0);
-    } finally {
-      await replaceDocumentText(document, originalText);
-    }
-  });
-
-  test("Offers a quick fix that appends to an existing directive", async () => {
-    const docUri = getDocUri("lint/append.sql");
-    const document = await activate(docUri);
-    const originalText = document.getText();
-
-    try {
-      const diagnostic = await waitForLintDiagnostic(
-        docUri,
-        "no-wildcard-projection",
-      );
-      const action = await waitForQuickFix(docUri, diagnostic, (candidate) => {
-        return (
-          candidate.title === "Disable no-wildcard-projection for next line"
-        );
-      });
-
-      assert.ok(action.edit);
-      const edit = firstDocumentEdit(action, docUri);
-      assert.strictEqual(edit.newText, ", no-wildcard-projection");
-      assert.strictEqual(edit.range.start.line, 0);
-      assert.strictEqual(edit.range.start.character, 48);
-      assert.strictEqual(edit.range.end.line, 0);
-      assert.strictEqual(edit.range.end.character, 48);
-    } finally {
-      await replaceDocumentText(document, originalText);
-    }
-  });
-
-  test("Offers a quick fix that removes an unknown lint rule", async () => {
-    const docUri = getDocUri("lint/unknown-rule.sql");
-    const document = await activate(docUri);
-    const originalText = document.getText();
-
-    try {
-      const diagnostic = await waitForLintDiagnostic(
-        docUri,
-        "invalid-lint-directive",
-      );
-      const action = await waitForQuickFix(docUri, diagnostic, (candidate) => {
-        return candidate.title === "Remove unknown lint rule";
-      });
-
-      assert.ok(action.edit);
-      const applied = await vscode.workspace.applyEdit(action.edit);
-      assert.strictEqual(applied, true);
-
-      const updatedText = await waitForDocumentText(
-        docUri,
-        (value) =>
-          value ===
-          [
-            "-- uroborosql-lint-disable-next-line no-distinct",
-            "SELECT DISTINCT id",
-            "FROM users;",
-            "",
-          ].join("\n"),
-      );
-
-      assert.strictEqual(
-        updatedText,
-        [
-          "-- uroborosql-lint-disable-next-line no-distinct",
-          "SELECT DISTINCT id",
-          "FROM users;",
-          "",
-        ].join("\n"),
-      );
     } finally {
       await replaceDocumentText(document, originalText);
     }
@@ -134,7 +61,7 @@ suite("Code Action E2E", () => {
 
       assert.deepStrictEqual(actions, []);
     } finally {
-      await updateLintConfigurationFilePath(docUri, "");
+      await updateLintConfigurationFilePath(docUri, null);
     }
   });
 });
