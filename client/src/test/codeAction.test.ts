@@ -46,13 +46,14 @@ suite("Code Action E2E", () => {
     try {
       await activate(docUri);
 
-      const diagnostics = await waitForDiagnosticsStability(
+      // Wait for diagnostics to settle empty as a sync barrier before asking
+      // for code actions; lint.test.ts owns asserting the diagnostics are empty.
+      await waitForDiagnosticsStability(
         docUri,
         (value) => value.length === 0,
         1_000,
         5_000,
       );
-      assert.deepStrictEqual(diagnostics, []);
 
       const actions = await requestQuickFixes(
         docUri,
@@ -93,6 +94,9 @@ async function waitForQuickFix(
   const actions = await waitFor(
     async () => requestQuickFixes(docUri, diagnostic.range),
     (value) => value.some(predicate),
+    undefined,
+    undefined,
+    `Timed out waiting for a matching quick fix on ${docUri.fsPath}`,
   );
 
   const action = actions.find(predicate);

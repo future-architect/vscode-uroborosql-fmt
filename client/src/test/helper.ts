@@ -68,59 +68,13 @@ function waitForEvent<T>(
   });
 }
 
-/**
- * Resolve once `predicate(read())` has held continuously for `stableForMs`.
- * Used to assert the *absence* of a change: the value must settle and stay
- * settled rather than merely be reached once.
- */
-function waitForStableEvent<T>(
-  subscribe: (notify: () => void) => vscode.Disposable,
-  read: () => T,
-  predicate: (value: T) => boolean,
-  stableForMs: number,
-  timeoutMessage: string,
-  timeoutMs: number = DEFAULT_TIMEOUT_MS,
-): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    let stableTimer: NodeJS.Timeout | undefined;
-    const timeoutTimer = setTimeout(() => {
-      cleanup();
-      reject(new Error(timeoutMessage));
-    }, timeoutMs);
-
-    const cleanup = () => {
-      clearTimeout(timeoutTimer);
-      if (stableTimer) {
-        clearTimeout(stableTimer);
-      }
-      subscription.dispose();
-    };
-
-    const evaluate = () => {
-      if (stableTimer) {
-        clearTimeout(stableTimer);
-        stableTimer = undefined;
-      }
-      if (!predicate(read())) {
-        return;
-      }
-      stableTimer = setTimeout(() => {
-        cleanup();
-        resolve(read());
-      }, stableForMs);
-    };
-
-    const subscription = subscribe(evaluate);
-    evaluate();
-  });
-}
-
 /** Poll `getValue()` until `predicate` holds; for state with no change event. */
 export async function waitFor<T>(
   getValue: () => Thenable<T> | T,
   predicate: (value: T) => boolean,
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
   intervalMs: number = 100,
+  timeoutMessage?: string,
 ): Promise<T> {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
@@ -129,7 +83,7 @@ export async function waitFor<T>(
       return value;
     }
     if (Date.now() >= deadline) {
-      throw new Error(`Timed out after ${timeoutMs}ms`);
+      throw new Error(timeoutMessage ?? `Timed out after ${timeoutMs}ms`);
     }
     await delay(intervalMs);
   }
@@ -151,7 +105,7 @@ export async function waitForDocumentTextChange(
       const text = (await vscode.workspace.openTextDocument(docUri)).getText();
       return text !== previousText ? text : undefined;
     },
-    `Timed out after ${timeoutMs}ms`,
+    `Timed out after ${timeoutMs}ms waiting for ${docUri.fsPath} text to change`,
     timeoutMs,
   );
 }
@@ -177,25 +131,59 @@ export async function waitForDiagnostics(
       const diagnostics = vscode.languages.getDiagnostics(docUri);
       return predicate(diagnostics) ? diagnostics : undefined;
     },
-    `Timed out after ${timeoutMs}ms`,
+    `Timed out after ${timeoutMs}ms waiting for diagnostics on ${docUri.fsPath}`,
     timeoutMs,
   );
 }
 
+/**
+ * Resolve once `predicate` over the diagnostics has held continuously for
+ * `stableForMs`. Used to assert the *absence* of a change: the value must
+ * settle and stay settled rather than merely be reached once.
+ */
 export async function waitForDiagnosticsStability(
   docUri: vscode.Uri,
   predicate: (value: readonly vscode.Diagnostic[]) => boolean,
   stableForMs: number,
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
 ): Promise<readonly vscode.Diagnostic[]> {
-  return waitForStableEvent(
-    (notify) => onDiagnosticsChange(docUri, notify),
-    () => vscode.languages.getDiagnostics(docUri),
-    predicate,
-    stableForMs,
-    `Timed out after ${timeoutMs}ms waiting ${stableForMs}ms for stable diagnostics`,
-    timeoutMs,
-  );
+  const read = () => vscode.languages.getDiagnostics(docUri);
+  return new Promise<readonly vscode.Diagnostic[]>((resolve, reject) => {
+    let stableTimer: NodeJS.Timeout | undefined;
+    const timeoutTimer = setTimeout(() => {
+      cleanup();
+      reject(
+        new Error(
+          `Timed out after ${timeoutMs}ms waiting ${stableForMs}ms for stable diagnostics on ${docUri.fsPath}`,
+        ),
+      );
+    }, timeoutMs);
+
+    const cleanup = () => {
+      clearTimeout(timeoutTimer);
+      if (stableTimer) {
+        clearTimeout(stableTimer);
+      }
+      subscription.dispose();
+    };
+
+    const evaluate = () => {
+      if (stableTimer) {
+        clearTimeout(stableTimer);
+        stableTimer = undefined;
+      }
+      if (!predicate(read())) {
+        return;
+      }
+      stableTimer = setTimeout(() => {
+        cleanup();
+        resolve(read());
+      }, stableForMs);
+    };
+
+    const subscription = onDiagnosticsChange(docUri, evaluate);
+    evaluate();
+  });
 }
 
 export async function replaceDocumentText(
@@ -247,6 +235,9 @@ export async function captureErrorMessages(
               ? message === expectedMessage
               : expectedMessage.test(message),
           ),
+        undefined,
+        undefined,
+        `Timed out waiting for error message matching ${expectedMessage}`,
       );
     }
     return messages;

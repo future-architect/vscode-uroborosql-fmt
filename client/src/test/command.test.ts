@@ -9,7 +9,7 @@ import {
   waitForDocumentTextChange,
 } from "./helper";
 
-suite("Should format SQL as command-driven selections", () => {
+suite("Should format SQL via commands", () => {
   const embeddedDocUri = getDocUri("embedded.ts");
   const invalidEmbeddedDocUri = getDocUri("embedded-invalid-sql.ts");
   const wholeDocumentAsSqlUri = getDocUri("whole-document-as-sql.txt");

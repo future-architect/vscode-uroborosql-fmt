@@ -2,7 +2,6 @@ import * as assert from "assert";
 import {
   activate,
   getDocUri,
-  waitForDiagnostics,
   waitForDiagnosticsStability,
   updateLintConfigurationFilePath,
 } from "./helper";
@@ -15,14 +14,23 @@ suite("Lint E2E", () => {
     try {
       await activate(docUri);
 
-      // The wait already proves no-wildcard-projection is present; the explicit
-      // config must additionally keep no-distinct disabled.
-      const diagnostics = await waitForDiagnostics(docUri, (value) =>
-        value.some(
+      // Under the explicit config no-distinct is off, so the settled state has
+      // no-wildcard-projection but not no-distinct. Waiting for stability avoids
+      // latching the transient default-config diagnostics published first.
+      const diagnostics = await waitForDiagnosticsStability(
+        docUri,
+        (value) =>
+          value.some(
+            (diagnostic) => diagnostic.code === "no-wildcard-projection",
+          ) && value.every((diagnostic) => diagnostic.code !== "no-distinct"),
+        500,
+      );
+
+      assert.ok(
+        diagnostics.some(
           (diagnostic) => diagnostic.code === "no-wildcard-projection",
         ),
       );
-
       assert.ok(
         diagnostics.every((diagnostic) => diagnostic.code !== "no-distinct"),
       );

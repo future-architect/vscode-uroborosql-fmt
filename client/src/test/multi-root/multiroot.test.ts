@@ -15,6 +15,22 @@ const hasCode = (diagnostics: readonly vscode.Diagnostic[], code: string) =>
   diagnostics.some((diagnostic) => diagnostic.code === code);
 
 suite("Multi-root workspace E2E", () => {
+  test("first folder (project-a) uses its own config (no-distinct on, no-wildcard off)", async () => {
+    const docUri = getMultirootDocUri("project-a/query.sql");
+    await activate(docUri);
+
+    // Paired with the project-b case below, this proves config resolution uses
+    // each folder's own config regardless of workspaceFolders order.
+    const diagnostics = await waitForDiagnostics(docUri, (value) =>
+      hasCode(value, "no-distinct"),
+    );
+
+    const distinct = diagnostics.find((d) => d.code === "no-distinct");
+    assert.ok(distinct);
+    assert.strictEqual(distinct.severity, vscode.DiagnosticSeverity.Error);
+    assert.ok(!hasCode(diagnostics, "no-wildcard-projection"));
+  });
+
   test("non-first folder (project-b) uses its own config (no-wildcard on, no-distinct off)", async () => {
     const docUri = getMultirootDocUri("project-b/query.sql");
     await activate(docUri);
