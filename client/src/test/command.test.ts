@@ -81,7 +81,7 @@ suite("Should format SQL as command-driven selections", () => {
     );
     vscode.window.activeTextEditor!.selections = [first, second];
 
-    const { messages } = await captureErrorMessages(async () => {
+    const messages = await captureErrorMessages(async () => {
       await vscode.commands.executeCommand(
         "uroborosql-fmt.format-selection-as-sql",
       );
@@ -105,7 +105,7 @@ suite("Should format SQL as command-driven selections", () => {
       ),
     ];
 
-    const { messages } = await captureErrorMessages(async () => {
+    const messages = await captureErrorMessages(async () => {
       await vscode.commands.executeCommand(
         "uroborosql-fmt.format-selection-as-sql",
       );

@@ -2,27 +2,14 @@ import { readdir } from "fs/promises";
 import * as path from "path";
 import * as Mocha from "mocha";
 
-const dedicatedSuiteDirName = "multi-root";
-
+// Suites in subdirectories (e.g. multi-root) run in their own VS Code session,
+// so only the `.test.js` files directly under this directory belong here.
 const collectTestFiles = async (root: string): Promise<string[]> => {
   const entries = await readdir(root, { withFileTypes: true });
-  const nestedFiles = await Promise.all(
-    entries.map(async (entry) => {
-      const fullPath = path.resolve(root, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === dedicatedSuiteDirName) {
-          return [];
-        }
-        return collectTestFiles(fullPath);
-      }
-      if (entry.isFile() && entry.name.endsWith(".test.js")) {
-        return [fullPath];
-      }
-      return [];
-    }),
-  );
-
-  return nestedFiles.flat().sort();
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".test.js"))
+    .map((entry) => path.resolve(root, entry.name))
+    .sort();
 };
 
 export async function run(): Promise<void> {

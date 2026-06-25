@@ -15,17 +15,14 @@ suite("Lint E2E", () => {
     try {
       await activate(docUri);
 
+      // The wait already proves no-wildcard-projection is present; the explicit
+      // config must additionally keep no-distinct disabled.
       const diagnostics = await waitForDiagnostics(docUri, (value) =>
         value.some(
           (diagnostic) => diagnostic.code === "no-wildcard-projection",
         ),
       );
 
-      assert.ok(
-        diagnostics.some(
-          (diagnostic) => diagnostic.code === "no-wildcard-projection",
-        ),
-      );
       assert.ok(
         diagnostics.every((diagnostic) => diagnostic.code !== "no-distinct"),
       );

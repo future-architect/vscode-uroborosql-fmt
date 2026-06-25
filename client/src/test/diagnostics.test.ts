@@ -21,7 +21,6 @@ suite("Should get diagnostics", () => {
         (value) => value.length > 0,
       );
 
-      assert.ok(actualDiagnostics.length > 0);
       assert.ok(
         actualDiagnostics.some(
           (diagnostic) =>
