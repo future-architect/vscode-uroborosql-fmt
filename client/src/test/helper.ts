@@ -86,7 +86,7 @@ export async function waitForDocumentTextChange(
   );
 }
 
-export async function waitForDocumentText(
+async function waitForDocumentText(
   docUri: vscode.Uri,
   predicate: (value: string) => boolean,
   timeoutMs: number = 10_000,
