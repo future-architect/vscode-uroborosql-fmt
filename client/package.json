@@ -7,7 +7,8 @@
   "publisher": "Future",
   "repository": {},
   "engines": {
-    "vscode": "^1.63.0"
+    "vscode": "^1.63.0",
+    "node": ">=24.14.0 <25"
   },
   "dependencies": {
     "vscode-languageclient": "^7.0.0"
