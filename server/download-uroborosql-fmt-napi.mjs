@@ -15,7 +15,23 @@ const releaseTag = `uroborosql-fmt-napi-v${NAPI_VERSION}`;
 const tgzName = `uroborosql-fmt-napi-${NAPI_VERSION}.tgz`;
 const tarballUrl = `https://github.com/future-architect/uroborosql-fmt/releases/download/${releaseTag}/${tgzName}`;
 
-http.setGlobalProxyFromEnv();
+const proxyEnv = {
+  ...process.env,
+  HTTP_PROXY:
+    process.env.HTTP_PROXY ??
+    process.env.http_proxy ??
+    process.env.npm_config_http_proxy,
+  HTTPS_PROXY:
+    process.env.HTTPS_PROXY ??
+    process.env.https_proxy ??
+    process.env.npm_config_https_proxy,
+  NO_PROXY:
+    process.env.NO_PROXY ??
+    process.env.no_proxy ??
+    process.env.npm_config_no_proxy,
+};
+
+http.setGlobalProxyFromEnv(proxyEnv);
 
 main();
 
