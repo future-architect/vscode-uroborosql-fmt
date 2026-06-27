@@ -33,9 +33,21 @@ You can enable format on save for SQL by having the following values in your set
 
 ## Settings
 
-| Settings                             | Defaults | Description                                                                                                                                                                                                                                                                                               |
-| ------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| uroborosql-fmt.configurationFilePath | null     | The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`. If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations. |
+| Settings                                 | Defaults | Description                                                                                                                                                                                                                                                                                               |
+| ---------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| uroborosql-fmt.configurationFilePath     | null     | The path of configuration file. File extension must be `.json`. If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`. If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations. |
+| uroborosql-fmt.lintConfigurationFilePath | null     | The path of lint configuration file. File extension must be `.json`. If you do not specify the path and `./.uroborosqllintrc.json` exists, lint uses `./.uroborosqllintrc.json`. If no lint config can be resolved, lint diagnostics and lint quick fixes stay disabled. This feature is beta.            |
+
+## Lint (Beta)
+
+The extension can also publish lint diagnostics and quick fixes for SQL files.
+
+- Lint is enabled only when a lint config can be resolved.
+- By default, the extension looks for `.uroborosqllintrc.json` in the workspace root.
+- You can also point to a specific lint config with `uroborosql-fmt.lintConfigurationFilePath`.
+- If no lint config can be resolved, the extension continues to format SQL, but does not publish lint diagnostics or lint quick fixes.
+
+To get started, create `.uroborosqllintrc.json` in the workspace root. If you use the CLI, you can generate a starter config with `uroborosql-lint init`.
 
 ### Configuration options
 
@@ -87,7 +99,8 @@ If there is no configuration file, the default values are used.
 
 | command title                                                | description                                                                                                                                                                                                                                                                                                                                      |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Format SQL                                                   | You can trigger formatting by executing this command.                                                                                                                                                                                                                                                                                            |
+| Format SQL                                                   | You can trigger formatting by executing this command. If there is a selection, it formats the selection as SQL. If nothing is selected, it formats the entire document as SQL.                                                                                                                                                                   |
+| Format Selection as SQL                                      | You can format the current selection as SQL even in non-SQL files such as TypeScript template literals.                                                                                                                                                                                                                                          |
 | Export workspace config to uroborosql-fmt config file        | You can export workspace configurations to formatter's configuration file (specified in [uroborosql-fmt.configurationFilePath](https://github.com/future-architect/vscode-uroborosql-fmt/#:~:text=uroborosql%2Dfmt.configurationFilePath)). Only the non-null configurations in `settings.json` will overwrite those in `.uroborosqlfmtrc.json`. |
 | Import uroborosql-fmt config file config to workspace config | You can import formatter's configuration into workspace configuration. Configuration values that exist in `settings.json`, but not in `.uroborosqlfmtrc.json`, will be set to `null`.                                                                                                                                                            |
 | Import uroborosql-fmt config file config to global config    | You can import formatter's configuration into global configuration. Configuration values that exist in `settings.json`, but not in `.uroborosqlfmtrc.json`, will be set to `null`.                                                                                                                                                               |

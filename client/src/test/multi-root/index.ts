@@ -1,4 +1,4 @@
-import { collectTestFiles, createMochaRunner } from "./mochaRunner";
+import { collectTestFiles, createMochaRunner } from "../mochaRunner";
 
 export async function run(): Promise<void> {
   const files = await collectTestFiles(__dirname);

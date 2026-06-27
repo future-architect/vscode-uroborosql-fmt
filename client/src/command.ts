@@ -3,36 +3,54 @@ import { objectToCamel, objectToSnake } from "ts-case-convert";
 import type { ObjectToSnake } from "ts-case-convert/lib/caseConvert";
 import {
   ConfigurationTarget,
+  Position,
+  Range,
+  Selection,
+  TextDocument,
   Uri,
   window,
   workspace,
   WorkspaceConfiguration,
   WorkspaceFolder,
+  WorkspaceEdit,
 } from "vscode";
-import { ExecuteCommandRequest } from "vscode-languageclient";
-import { LanguageClient } from "vscode-languageclient/node";
+import type { LanguageClient } from "vscode-languageclient/node";
 
-const vsCodeConfigurationsObject = {
-  configurationFilePath: "",
-  debug: null,
-  tabSize: null,
-  complementAlias: null,
-  trimBindParam: null,
-  keywordCase: null,
-  identifierCase: null,
-  maxCharPerLine: null,
-  complementOuterKeyword: null,
-  complementColumnAsKeyword: null,
-  removeTableAsKeyword: null,
-  removeRedundantNest: null,
-  complementSqlId: null,
-  convertDoubleColonCast: null,
-  unifyNotEqual: null,
-  indentTab: null,
-  useParserErrorRecovery: null,
-} satisfies ConfigurationRecord;
+const FORMAT_SELECTIONS_AS_SQL_METHOD = "uroborosql/formatSelectionsAsSql";
+const EMPTY_SELECTION_MESSAGE = "Select text to format as SQL.";
+const OVERLAPPING_SELECTIONS_MESSAGE = "Selections must not overlap.";
+const VERSION_MISMATCH_MESSAGE =
+  "Document changed while formatting selection as SQL.";
+const FORMAT_FAILURE_PREFIX = "Format failed: ";
 
-type ConfigurationRecord = {
+type FormatSelectionAsSqlRequest = {
+  hostDocumentUri: string;
+  hostDocumentVersion: number;
+  selections: {
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    };
+    text: string;
+  }[];
+};
+
+type FormatSelectionAsSqlResponse = {
+  hostDocumentVersion: number;
+  edits: {
+    range: {
+      start: { line: number; character: number };
+      end: { line: number; character: number };
+    };
+    newText: string;
+  }[];
+};
+
+type FormatAsSqlCommandOptions = {
+  formatWholeDocumentWhenNoSelection: boolean;
+};
+
+type FormattingConfigurationRecord = {
   configurationFilePath: string;
   debug: boolean | null | undefined;
   tabSize: number | null | undefined;
@@ -52,13 +70,37 @@ type ConfigurationRecord = {
   useParserErrorRecovery: boolean | null | undefined;
 };
 
+const formattingConfigurationsObject = {
+  configurationFilePath: "",
+  debug: null,
+  tabSize: null,
+  complementAlias: null,
+  trimBindParam: null,
+  keywordCase: null,
+  identifierCase: null,
+  maxCharPerLine: null,
+  complementOuterKeyword: null,
+  complementColumnAsKeyword: null,
+  removeTableAsKeyword: null,
+  removeRedundantNest: null,
+  complementSqlId: null,
+  convertDoubleColonCast: null,
+  unifyNotEqual: null,
+  indentTab: null,
+  useParserErrorRecovery: null,
+} satisfies FormattingConfigurationRecord;
+
+const importableFormattingConfigurationKeys = Object.keys(
+  formattingConfigurationsObject,
+).filter((key) => key !== "configurationFilePath");
+
 // WorkspaceConfigurationを受け取り、フォーマッタで利用する設定のみのRecordにして返す
 const extractFormattingConfigurations = (
   workspaceConfig: WorkspaceConfiguration,
-): Partial<ConfigurationRecord> => {
+): Partial<FormattingConfigurationRecord> => {
   // uroborosql-fmtのVSCode拡張で有効な設定項目のうち、明示的に設定されているもののみを取得
-  const config: Partial<ConfigurationRecord> = {};
-  for (const key of Object.keys(vsCodeConfigurationsObject)) {
+  const config: Partial<FormattingConfigurationRecord> = {};
+  for (const key of Object.keys(formattingConfigurationsObject)) {
     const value = workspaceConfig.get(key);
     if (value != null) {
       config[key] = value;
@@ -70,6 +112,15 @@ const extractFormattingConfigurations = (
 
   return restConfiguration;
 };
+
+const extractImportableFormattingConfigurations = (
+  config: Record<string, unknown>,
+): Record<string, unknown> =>
+  Object.fromEntries(
+    Object.entries(config).filter(([key]) =>
+      importableFormattingConfigurationKeys.includes(key),
+    ),
+  );
 
 const isFileExists = async (uri: Uri): Promise<boolean> => {
   try {
@@ -83,10 +134,14 @@ const isFileExists = async (uri: Uri): Promise<boolean> => {
 // uroborosql-fmt の設定ファイル名を取得する
 // ワークスペースの側で設定されている場合はその値を、設定されていない場合は ".uroborosqlfmtrc.json"を返す
 const getConfigFileName = (
+  documentUri: Uri,
   defaultName: string = ".uroborosqlfmtrc.json",
 ): string => {
   // uroborosql-fmt の設定を取得
-  const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
+  const vsCodeConfig = workspace.getConfiguration(
+    "uroborosql-fmt",
+    documentUri,
+  );
 
   // Default value of `uroborosql-fmt.configurationFilePath` is "".
   const vsCodeConfigPath: string = vsCodeConfig.get("configurationFilePath");
@@ -134,18 +189,6 @@ const getTargetFolder = (): WorkspaceFolder | undefined => {
   return;
 };
 
-export const buildFormatFunction =
-  (client: LanguageClient) => async (): Promise<void> => {
-    const uri = window.activeTextEditor.document.uri;
-    const version = window.activeTextEditor.document.version;
-    const selections = window.activeTextEditor.selections;
-
-    await client.sendRequest(ExecuteCommandRequest.type, {
-      command: "uroborosql-fmt.executeFormat",
-      arguments: [uri, version, selections],
-    });
-  };
-
 export const exportSettings = async (): Promise<void> => {
   const folder = getTargetFolder();
   if (!folder) {
@@ -153,14 +196,14 @@ export const exportSettings = async (): Promise<void> => {
   }
 
   // 設定ファイルのURIを作成
-  const configFile = Uri.joinPath(folder.uri, getConfigFileName());
+  const configFile = Uri.joinPath(folder.uri, getConfigFileName(folder.uri));
 
   // VSCode拡張側の設定を取得
   const vsCodeConfig = workspace.getConfiguration("uroborosql-fmt");
   const formattingConfig = extractFormattingConfigurations(vsCodeConfig);
 
   // 設定ファイルの設定を取得
-  let existingConfig: ObjectToSnake<Partial<ConfigurationRecord>>;
+  let existingConfig: ObjectToSnake<Partial<FormattingConfigurationRecord>>;
   if (await isFileExists(configFile)) {
     const file = await workspace.fs.readFile(configFile);
     existingConfig = JSON.parse(file.toString());
@@ -189,7 +232,7 @@ export const buildImportSettingsFunction =
     }
 
     // 設定ファイルのURIを作成
-    const configFile = Uri.joinPath(folder.uri, getConfigFileName());
+    const configFile = Uri.joinPath(folder.uri, getConfigFileName(folder.uri));
 
     if (!(await isFileExists(configFile))) {
       window.showErrorMessage(
@@ -199,7 +242,7 @@ export const buildImportSettingsFunction =
     }
 
     const blob = await workspace.fs.readFile(configFile);
-    const config: ObjectToSnake<ConfigurationRecord> = JSON.parse(
+    const config: ObjectToSnake<FormattingConfigurationRecord> = JSON.parse(
       blob.toString(),
     );
 
@@ -216,9 +259,165 @@ export const buildImportSettingsFunction =
     );
 
     // 設定ファイルの値で更新する
+    const importedConfig = extractImportableFormattingConfigurations(
+      objectToCamel(config),
+    );
     await Promise.all(
-      Object.entries(objectToCamel(config)).map(([key, value]) =>
+      Object.entries(importedConfig).map(([key, value]) =>
         vsCodeConfig.update(key, value, target),
       ),
     );
   };
+
+const selectionToRange = (selection: Selection): Range =>
+  new Range(selection.start, selection.end);
+
+const rangeToRequestRange = (range: Range) => ({
+  start: { line: range.start.line, character: range.start.character },
+  end: { line: range.end.line, character: range.end.character },
+});
+
+const requestRangeToRange = (range: {
+  start: { line: number; character: number };
+  end: { line: number; character: number };
+}): Range =>
+  new Range(
+    new Position(range.start.line, range.start.character),
+    new Position(range.end.line, range.end.character),
+  );
+
+const getFullDocumentRange = (document: TextDocument): Range =>
+  new Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  );
+
+const formatFailureMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return `${FORMAT_FAILURE_PREFIX}${error.message}`;
+  }
+  return `${FORMAT_FAILURE_PREFIX}${String(error)}`;
+};
+
+const getSelectionsToFormat = (
+  document: TextDocument,
+  selections: readonly Selection[],
+  options: FormatAsSqlCommandOptions,
+): Range[] => {
+  const nonEmptySelections = selections.filter(
+    (selection) => !selection.isEmpty,
+  );
+
+  if (nonEmptySelections.length > 0) {
+    return nonEmptySelections.map(selectionToRange);
+  }
+
+  if (options.formatWholeDocumentWhenNoSelection) {
+    return [getFullDocumentRange(document)];
+  }
+
+  return [];
+};
+
+const hasOverlappingSelections = (
+  document: TextDocument,
+  selections: readonly Selection[],
+): boolean => {
+  const sortedRanges = selections
+    .map(selectionToRange)
+    .map((range) => ({
+      start: document.offsetAt(range.start),
+      end: document.offsetAt(range.end),
+    }))
+    .sort((left, right) => left.start - right.start);
+
+  for (let i = 1; i < sortedRanges.length; i += 1) {
+    if (sortedRanges[i].start < sortedRanges[i - 1].end) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const buildFormatAsSqlCommand =
+  (client: LanguageClient, options: FormatAsSqlCommandOptions) =>
+  async (): Promise<void> => {
+    const editor = window.activeTextEditor;
+    if (!editor) {
+      return;
+    }
+
+    const { document, selections } = editor;
+    if (
+      !options.formatWholeDocumentWhenNoSelection &&
+      (selections.length === 0 ||
+        selections.some((selection) => selection.isEmpty))
+    ) {
+      window.showErrorMessage(EMPTY_SELECTION_MESSAGE);
+      return;
+    }
+
+    const rangesToFormat = getSelectionsToFormat(document, selections, options);
+    if (rangesToFormat.length === 0) {
+      window.showErrorMessage(EMPTY_SELECTION_MESSAGE);
+      return;
+    }
+
+    const selectionRanges = rangesToFormat.map(
+      (range) => new Selection(range.start, range.end),
+    );
+    if (hasOverlappingSelections(document, selectionRanges)) {
+      window.showErrorMessage(OVERLAPPING_SELECTIONS_MESSAGE);
+      return;
+    }
+
+    const requestVersion = document.version;
+    const params: FormatSelectionAsSqlRequest = {
+      hostDocumentUri: document.uri.toString(),
+      hostDocumentVersion: requestVersion,
+      selections: rangesToFormat.map((range) => ({
+        range: rangeToRequestRange(range),
+        text: document.getText(range),
+      })),
+    };
+
+    try {
+      await client.onReady();
+      const result = await client.sendRequest<FormatSelectionAsSqlResponse>(
+        FORMAT_SELECTIONS_AS_SQL_METHOD,
+        params,
+      );
+
+      if (
+        document.version !== requestVersion ||
+        result.hostDocumentVersion !== requestVersion
+      ) {
+        window.showErrorMessage(VERSION_MISMATCH_MESSAGE);
+        return;
+      }
+
+      const edit = new WorkspaceEdit();
+      for (const textEdit of result.edits) {
+        edit.replace(
+          document.uri,
+          requestRangeToRange(textEdit.range),
+          textEdit.newText,
+        );
+      }
+
+      await workspace.applyEdit(edit);
+    } catch (error) {
+      window.showErrorMessage(formatFailureMessage(error));
+    }
+  };
+
+export const buildFormatSelectionsAsSqlCommand = (client: LanguageClient) =>
+  buildFormatAsSqlCommand(client, {
+    formatWholeDocumentWhenNoSelection: false,
+  });
+
+export const buildFormatSqlCommand = (client: LanguageClient) =>
+  buildFormatAsSqlCommand(client, {
+    formatWholeDocumentWhenNoSelection: true,
+  });
