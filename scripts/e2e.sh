@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eu
 
 node "$(pwd)/client/out/test/runTest"
