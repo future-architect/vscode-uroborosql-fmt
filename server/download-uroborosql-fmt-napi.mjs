@@ -1,8 +1,8 @@
 import { writeFileSync } from "node:fs";
+import http from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ProxyAgent } from "undici";
-import * as cp from "child_process";
+import { execSync } from "node:child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -11,45 +11,42 @@ const __dirname = dirname(__filename);
 // update-napi-version.yml ワークフローによって自動更新される
 const NAPI_VERSION = "1.1.0";
 
+const releaseTag = `uroborosql-fmt-napi-v${NAPI_VERSION}`;
+const tgzName = `uroborosql-fmt-napi-${NAPI_VERSION}.tgz`;
+const tarballUrl = `https://github.com/future-architect/uroborosql-fmt/releases/download/${releaseTag}/${tgzName}`;
+
+const proxyEnv = {
+  ...process.env,
+  HTTP_PROXY:
+    process.env.HTTP_PROXY ??
+    process.env.http_proxy ??
+    process.env.npm_config_http_proxy,
+  HTTPS_PROXY:
+    process.env.HTTPS_PROXY ??
+    process.env.https_proxy ??
+    process.env.npm_config_https_proxy,
+  NO_PROXY:
+    process.env.NO_PROXY ??
+    process.env.no_proxy ??
+    process.env.npm_config_no_proxy,
+};
+
+http.setGlobalProxyFromEnv(proxyEnv);
+
 main();
 
 async function main() {
-  const tgzName = `uroborosql-fmt-napi-${NAPI_VERSION}.tgz`;
-  const releaseTag = `uroborosql-fmt-napi-v${NAPI_VERSION}`;
-  const agent = autoProxyAgent();
-  const res = await fetch(
-    `https://github.com/future-architect/uroborosql-fmt/releases/download/${releaseTag}/${tgzName}`,
-    agent ? { dispatcher: agent } : undefined,
-  );
-  const destination = join(__dirname, tgzName);
-  writeFileSync(destination, Buffer.from(await res.arrayBuffer()));
+  console.log(`Downloading and installing from: ${tarballUrl}`);
 
-  cp.execSync(`npm install ${destination}`, { cwd: __dirname });
-}
-
-function autoProxyAgent() {
-  const PROXY_ENV = [
-    "https_proxy",
-    "HTTPS_PROXY",
-    "http_proxy",
-    "HTTP_PROXY",
-    "npm_config_https_proxy",
-    "npm_config_http_proxy",
-  ];
-
-  const proxyStr = PROXY_ENV.map((k) => process.env[k]).find((v) => v);
-  if (!proxyStr) {
-    return null;
+  const response = await fetch(tarballUrl);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to download ${tarballUrl}: ${response.status} ${response.statusText}`,
+    );
   }
-  const proxyUrl = new URL(proxyStr);
 
-  return new ProxyAgent({
-    uri: proxyUrl.protocol + proxyUrl.host,
-    token:
-      proxyUrl.username || proxyUrl.password
-        ? `Basic ${Buffer.from(
-            `${proxyUrl.username}:${decodeURIComponent(proxyUrl.password)}`,
-          ).toString("base64")}`
-        : undefined,
-  });
+  const destination = join(__dirname, tgzName);
+  writeFileSync(destination, Buffer.from(await response.arrayBuffer()));
+
+  execSync(`npm install ${destination}`, { cwd: __dirname, stdio: "inherit" });
 }
