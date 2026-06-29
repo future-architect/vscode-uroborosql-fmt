@@ -8,8 +8,8 @@ suite("Configuration export/import (single-root)", () => {
 
   const getConfig = () => vscode.workspace.getConfiguration("uroborosql-fmt");
 
-  const configFileUri = () =>
-    vscode.Uri.joinPath(getWorkspaceFolderUri(), CONFIG_FILE_NAME);
+  const configFileUri = (fileName = CONFIG_FILE_NAME) =>
+    vscode.Uri.joinPath(getWorkspaceFolderUri(), fileName);
 
   const exists = async (uri: vscode.Uri): Promise<boolean> => {
     try {
@@ -20,20 +20,27 @@ suite("Configuration export/import (single-root)", () => {
     }
   };
 
-  const writeConfigFile = async (value: unknown): Promise<void> => {
+  const writeConfigFile = async (
+    value: unknown,
+    fileName = CONFIG_FILE_NAME,
+  ): Promise<void> => {
     await vscode.workspace.fs.writeFile(
-      configFileUri(),
+      configFileUri(fileName),
       Buffer.from(JSON.stringify(value, null, 2)),
     );
   };
 
-  const readConfigFile = async (): Promise<Record<string, unknown>> => {
-    const bytes = await vscode.workspace.fs.readFile(configFileUri());
+  const readConfigFile = async (
+    fileName = CONFIG_FILE_NAME,
+  ): Promise<Record<string, unknown>> => {
+    const bytes = await vscode.workspace.fs.readFile(configFileUri(fileName));
     return JSON.parse(Buffer.from(bytes).toString("utf8"));
   };
 
-  const deleteConfigFile = async (): Promise<void> => {
-    const uri = configFileUri();
+  const deleteConfigFile = async (
+    fileName = CONFIG_FILE_NAME,
+  ): Promise<void> => {
+    const uri = configFileUri(fileName);
     if (await exists(uri)) {
       await vscode.workspace.fs.delete(uri);
     }
@@ -64,6 +71,20 @@ suite("Configuration export/import (single-root)", () => {
 
   setup(async () => {
     await activateExtension();
+  });
+
+  teardown(async () => {
+    await clearSettings(
+      ["tabSize", "keywordCase", "configurationFilePath"],
+      vscode.ConfigurationTarget.Workspace,
+    );
+    await clearSettings(
+      ["tabSize", "keywordCase", "configurationFilePath"],
+      vscode.ConfigurationTarget.Global,
+    );
+    await deleteWorkspaceSettingsFile();
+    await deleteConfigFile();
+    await deleteConfigFile("custom-settings.json");
   });
 
   test("export merges VS Code settings into the config file in snake_case", async () => {
@@ -108,8 +129,50 @@ suite("Configuration export/import (single-root)", () => {
         ["tabSize", "keywordCase"],
         vscode.ConfigurationTarget.Workspace,
       );
-      await deleteWorkspaceSettingsFile();
-      await deleteConfigFile();
+    }
+  });
+
+  test("export writes to the configured configuration file path", async () => {
+    await getConfig().update(
+      "configurationFilePath",
+      "custom-settings.json",
+      vscode.ConfigurationTarget.Workspace,
+    );
+    await getConfig().update(
+      "tabSize",
+      6,
+      vscode.ConfigurationTarget.Workspace,
+    );
+
+    try {
+      await waitFor(
+        () =>
+          getConfig().inspect<string>("configurationFilePath")?.workspaceValue,
+        (value) => value === "custom-settings.json",
+        undefined,
+        undefined,
+        "Timed out waiting for configurationFilePath to settle before export",
+      );
+
+      await vscode.commands.executeCommand("uroborosql-fmt.export");
+
+      const exported = await waitFor(
+        () => readConfigFile("custom-settings.json"),
+        (value) => "tab_size" in value,
+        undefined,
+        undefined,
+        "Timed out waiting for export to write the configured settings file",
+      );
+
+      assert.deepStrictEqual(exported, {
+        tab_size: 6,
+      });
+      assert.strictEqual(await exists(configFileUri()), false);
+    } finally {
+      await clearSettings(
+        ["tabSize", "configurationFilePath"],
+        vscode.ConfigurationTarget.Workspace,
+      );
     }
   });
 
@@ -142,8 +205,55 @@ suite("Configuration export/import (single-root)", () => {
         ["tabSize", "keywordCase"],
         vscode.ConfigurationTarget.Workspace,
       );
-      await deleteWorkspaceSettingsFile();
-      await deleteConfigFile();
+    }
+  });
+
+  test("import-to-workspace clears workspace settings that are absent from the config file", async () => {
+    await getConfig().update(
+      "tabSize",
+      4,
+      vscode.ConfigurationTarget.Workspace,
+    );
+    await getConfig().update(
+      "keywordCase",
+      "upper",
+      vscode.ConfigurationTarget.Workspace,
+    );
+    await writeConfigFile({ keyword_case: "lower" });
+
+    try {
+      await waitFor(
+        () => getConfig().inspect<string>("keywordCase")?.workspaceValue,
+        (value) => value === "upper",
+        undefined,
+        undefined,
+        "Timed out waiting for initial workspace settings to settle",
+      );
+
+      await vscode.commands.executeCommand(
+        "uroborosql-fmt.import-to-workspace",
+      );
+
+      await waitFor(
+        () => getConfig().inspect<string>("keywordCase")?.workspaceValue,
+        (value) => value === "lower",
+        undefined,
+        undefined,
+        "Timed out waiting for keywordCase to update from the config file",
+      );
+
+      await waitFor(
+        () => getConfig().inspect<number>("tabSize")?.workspaceValue,
+        (value) => value === null,
+        undefined,
+        undefined,
+        "Timed out waiting for tabSize to be reset to null in workspace settings",
+      );
+    } finally {
+      await clearSettings(
+        ["tabSize", "keywordCase"],
+        vscode.ConfigurationTarget.Workspace,
+      );
     }
   });
 
@@ -187,8 +297,6 @@ suite("Configuration export/import (single-root)", () => {
         ["tabSize", "keywordCase"],
         vscode.ConfigurationTarget.Global,
       );
-      await deleteWorkspaceSettingsFile();
-      await deleteConfigFile();
     }
   });
 });
