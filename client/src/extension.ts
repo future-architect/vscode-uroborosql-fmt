@@ -124,6 +124,8 @@ export function activate(context: ExtensionContext) {
 
   // Start the client. This will also launch the server
   client.start();
+
+  return { onReady: () => client.onReady() };
 }
 
 function createStatusBar(): StatusBarItem {
