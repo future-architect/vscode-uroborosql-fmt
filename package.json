@@ -20,11 +20,11 @@
     "formatter"
   ],
   "engines": {
-    "vscode": "^1.63.0",
+    "vscode": "^1.74.0",
     "node": ">=24.14.0 <25"
   },
   "activationEvents": [
-    "*"
+    "onLanguage:sql"
   ],
   "main": "./client/out/extension",
   "contributes": {
