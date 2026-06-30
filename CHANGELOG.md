@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.0
+
+### Minor Changes
+
+- 86e801a: Update uroborosql-fmt
+
+  - Add linter feature and language server
+
 ## 2.0.1
 
 ### Patch Changes
