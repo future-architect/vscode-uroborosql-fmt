@@ -44,6 +44,10 @@
       {
         "command": "uroborosql-fmt.export",
         "title": "Export workspace config to uroborosql-fmt config file"
+      },
+      {
+        "command": "uroborosql-fmt.format-selection-as-sql",
+        "title": "Format Selection as SQL"
       }
     ],
     "configuration": {
@@ -52,6 +56,12 @@
         "uroborosql-fmt.configurationFilePath": {
           "type": "string",
           "markdownDescription": "The path of configuration file. File extension must be `.json`.\n\n- If you don't specify the path and `./.uroborosqlfmtrc.json` exists, formatter will use `./.uroborosqlfmtrc.json`.\n- If you doesn't specify and `.uroborosqlfmtrc.json` doesn't exist, formatter will use formatters default configurations.\n\nYou can use the commands listed below.\n- By executing `Import uroborosql-fmt config file config to workspace config` command, you can import formatter configurations into the workspace configuration.\n- By executing `Import uroborosql-fmt config file config to global config` command, you can import formatter configurations into the global configuration.\n- By executing `Export workspace config to uroborosql-fmt config file` command, you can export VSCode configurations to the formatter configuration file.",
+          "pattern": "^$|.+\\.json$",
+          "patternErrorMessage": "File extension must be `.json`."
+        },
+        "uroborosql-fmt.lintConfigurationFilePath": {
+          "type": "string",
+          "markdownDescription": "The path of lint configuration file. File extension must be `.json`.",
           "pattern": "^$|.+\\.json$",
           "patternErrorMessage": "File extension must be `.json`."
         },
@@ -269,6 +279,7 @@
     "format:check": "prettier --cache --check .",
     "postinstall": "npm run download-uroborosql-fmt-napi && cd client && npm install && cd ../server && npm install && cd ..",
     "test": "sh ./scripts/e2e.sh",
+    "test:multiroot": "sh ./scripts/e2e-multiroot.sh",
     "download-uroborosql-fmt-napi": "node ./server/download-uroborosql-fmt-napi.mjs",
     "dummy-release": "node ./scripts/dummy-publish.mjs"
   },
