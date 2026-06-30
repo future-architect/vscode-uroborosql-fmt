@@ -43,6 +43,19 @@ jobs:
         run: npm ci
       - name: Build
         run: npm run compile
-      # VS Code runs as an Electron (GUI) app, so it needs a virtual display.
       - name: Run e2e tests
         run: xvfb-run -a npm test
+  multiroot-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: npm
+      - name: Install Packages
+        run: npm ci
+      - name: Build
+        run: npm run compile
+      - name: Run multi-root e2e tests
+        run: xvfb-run -a npm run test:multiroot

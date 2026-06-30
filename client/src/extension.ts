@@ -1,6 +1,5 @@
 import * as path from "path";
 import {
-  workspace,
   ExtensionContext,
   window,
   commands,
@@ -18,9 +17,10 @@ import {
 } from "vscode-languageclient/node";
 
 import {
-  buildFormatFunction,
   exportSettings,
   buildImportSettingsFunction,
+  buildFormatSqlCommand,
+  buildFormatSelectionsAsSqlCommand,
 } from "./command";
 
 let client: LanguageClient;
@@ -31,31 +31,17 @@ export function activate(context: ExtensionContext) {
   const serverModule = context.asAbsolutePath(
     path.join("server", "out", "server.js"),
   );
-  // The debug options for the server
-  // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-  const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
-
-  // If the extension is launched in debug mode then the debug server options are used
-  // Otherwise the run options are used
+  // Rust 製 language server は stdio へバインドされるため stdio transport で接続する。
   const serverOptions: ServerOptions = {
-    run: { module: serverModule, transport: TransportKind.ipc },
-    debug: {
-      module: serverModule,
-      transport: TransportKind.ipc,
-      options: debugOptions,
-    },
+    run: { module: serverModule, transport: TransportKind.stdio },
+    debug: { module: serverModule, transport: TransportKind.stdio },
   };
 
-  // 対象とする言語。今回はplaintext
   const clientOptions: LanguageClientOptions = {
-    // Register the server for plain text documents
-    documentSelector: [
-      { pattern: "**", scheme: "file" },
-      { pattern: "**", scheme: "untitled" },
-    ],
+    // 拡張がサーバへ渡すのは SQL 文書のみに限定する。
+    documentSelector: [{ scheme: "file", language: "sql" }],
     synchronize: {
-      // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
+      configurationSection: "uroborosql-fmt",
     },
   };
 
@@ -70,7 +56,14 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.uroborosql-format",
-      buildFormatFunction(client),
+      buildFormatSqlCommand(client),
+    ),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.format-selection-as-sql",
+      buildFormatSelectionsAsSqlCommand(client),
     ),
   );
 
