@@ -329,13 +329,3 @@ export async function updateLintConfigurationFilePath(
     .getConfiguration("uroborosql-fmt", docUri)
     .update("lintConfigurationFilePath", value, target);
 }
-
-export async function updateFormattingConfigurationFilePath(
-  docUri: vscode.Uri,
-  value: string | undefined,
-  target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace,
-): Promise<void> {
-  await vscode.workspace
-    .getConfiguration("uroborosql-fmt", docUri)
-    .update("configurationFilePath", value, target);
-}
