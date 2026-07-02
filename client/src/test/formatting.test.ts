@@ -4,10 +4,14 @@ import {
   activateAndOpen,
   getDocUri,
   waitForDocumentTextChange,
+  waitForStatusState,
 } from "./helper";
 
 suite("Should format SQL documents", () => {
   const docUri = getDocUri("format.sql");
+  const rangeUri = getDocUri("range.sql");
+  const originalFullDocument = "select A from B\n";
+  const originalRangeDocument = "select a from b;\n";
   const expectedFullDocument = ["select", "\ta\tas\ta", "from", "\tb", ""].join(
     "\n",
   );
@@ -20,18 +24,33 @@ suite("Should format SQL documents", () => {
     "",
   ].join("\n");
 
+  const resetFormattingFixtures = async (): Promise<void> => {
+    await vscode.workspace.fs.writeFile(
+      docUri,
+      Buffer.from(originalFullDocument),
+    );
+    await vscode.workspace.fs.writeFile(
+      rangeUri,
+      Buffer.from(originalRangeDocument),
+    );
+  };
+
+  setup(resetFormattingFixtures);
+  teardown(resetFormattingFixtures);
+
   test("Formats an entire SQL document", async () => {
     const document = await activateAndOpen(docUri);
     const original = document.getText();
     await vscode.commands.executeCommand("editor.action.formatDocument");
     const formatted = await waitForDocumentTextChange(docUri, original);
+    const status = await waitForStatusState("normal");
 
     assert.notStrictEqual(formatted, original);
     assert.strictEqual(formatted, expectedFullDocument);
+    assert.strictEqual(status, "normal");
   });
 
   test("Formats a selected SQL range", async () => {
-    const rangeUri = getDocUri("range.sql");
     const document = await activateAndOpen(rangeUri);
     const fullRange = new vscode.Range(
       document.positionAt(0),
@@ -45,8 +64,10 @@ suite("Should format SQL documents", () => {
 
     await vscode.commands.executeCommand("editor.action.formatSelection");
     const formatted = await waitForDocumentTextChange(rangeUri, original);
+    const status = await waitForStatusState("normal");
 
     assert.notStrictEqual(formatted, original);
     assert.strictEqual(formatted, expectedSelectedRange);
+    assert.strictEqual(status, "normal");
   });
 });

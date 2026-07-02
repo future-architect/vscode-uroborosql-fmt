@@ -4,7 +4,10 @@ import * as path from "path";
 const EXTENSION_ID = "Future.uroborosql-fmt";
 const DEFAULT_TIMEOUT_MS = 10_000;
 
-type ExtensionApi = { onReady(): Promise<void> };
+type ExtensionApi = {
+  onReady(): Promise<void>;
+  getStatusState(): "normal" | "error";
+};
 
 export async function activateExtension(): Promise<ExtensionApi> {
   const ext = vscode.extensions.getExtension<ExtensionApi>(EXTENSION_ID);
@@ -31,6 +34,24 @@ export async function waitForLanguageClientReady(
     api.onReady(),
     timeoutMs,
     "Timed out waiting for the language client to become ready",
+  );
+}
+
+export async function getStatusState(): Promise<"normal" | "error"> {
+  const api = await activateExtension();
+  return api.getStatusState();
+}
+
+export async function waitForStatusState(
+  expected: "normal" | "error",
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<"normal" | "error"> {
+  return waitFor(
+    () => getStatusState(),
+    (value) => value === expected,
+    timeoutMs,
+    50,
+    `Timed out waiting for status state ${expected}`,
   );
 }
 
@@ -307,4 +328,14 @@ export async function updateLintConfigurationFilePath(
   await vscode.workspace
     .getConfiguration("uroborosql-fmt", docUri)
     .update("lintConfigurationFilePath", value, target);
+}
+
+export async function updateFormattingConfigurationFilePath(
+  docUri: vscode.Uri,
+  value: string | undefined,
+  target: vscode.ConfigurationTarget = vscode.ConfigurationTarget.Workspace,
+): Promise<void> {
+  await vscode.workspace
+    .getConfiguration("uroborosql-fmt", docUri)
+    .update("configurationFilePath", value, target);
 }
