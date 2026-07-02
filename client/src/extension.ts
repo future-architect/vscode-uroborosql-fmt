@@ -19,7 +19,6 @@ import { withFormattingStatus } from "./formattingStatus";
 import { createStatusBarController, type StatusBarState } from "./status";
 
 let client: LanguageClient;
-let statusBarState: StatusBarState = "normal";
 
 type ExtensionApi = {
   onReady(): Promise<void>;
@@ -41,14 +40,6 @@ export function activate(context: ExtensionContext): ExtensionApi {
   const statusBar = createStatusBarController(() => {
     client.outputChannel.show();
   });
-  const showNormal = () => {
-    statusBar.showNormal();
-    statusBarState = statusBar.getState();
-  };
-  const showError = () => {
-    statusBar.showError();
-    statusBarState = statusBar.getState();
-  };
 
   const clientOptions: LanguageClientOptions = {
     // 拡張がサーバへ渡すのは SQL 文書のみに限定する。
@@ -59,10 +50,7 @@ export function activate(context: ExtensionContext): ExtensionApi {
     revealOutputChannelOn: RevealOutputChannelOn.Never,
     middleware: {
       provideDocumentFormattingEdits: async (document, options, token, next) =>
-        withFormattingStatus(() => next(document, options, token), {
-          showNormal,
-          showError,
-        }),
+        withFormattingStatus(() => next(document, options, token), statusBar),
       provideDocumentRangeFormattingEdits: async (
         document,
         range,
@@ -70,10 +58,10 @@ export function activate(context: ExtensionContext): ExtensionApi {
         token,
         next,
       ) =>
-        withFormattingStatus(() => next(document, range, options, token), {
-          showNormal,
-          showError,
-        }),
+        withFormattingStatus(
+          () => next(document, range, options, token),
+          statusBar,
+        ),
     },
   };
 
@@ -88,14 +76,14 @@ export function activate(context: ExtensionContext): ExtensionApi {
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.uroborosql-format",
-      buildFormatSqlCommand(client, { showNormal, showError }),
+      buildFormatSqlCommand(client, statusBar),
     ),
   );
 
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.format-selection-as-sql",
-      buildFormatSelectionsAsSqlCommand(client, { showNormal, showError }),
+      buildFormatSelectionsAsSqlCommand(client, statusBar),
     ),
   );
 
@@ -131,7 +119,7 @@ export function activate(context: ExtensionContext): ExtensionApi {
 
   return {
     onReady: () => client.onReady(),
-    getStatusState: () => statusBarState,
+    getStatusState: () => statusBar.getState(),
   };
 }
 
