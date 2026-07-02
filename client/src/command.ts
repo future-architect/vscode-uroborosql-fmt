@@ -411,7 +411,13 @@ const buildFormatAsSqlCommand =
         );
       }
 
-      await workspace.applyEdit(edit);
+      // applyEdit は文書がリクエスト後に変化した場合などに false を返すため、
+      // version mismatch と同じ「サーバ失敗ではない適用中断」として扱い status は変えない
+      const applied = await workspace.applyEdit(edit);
+      if (!applied) {
+        window.showErrorMessage(VERSION_MISMATCH_MESSAGE);
+        return;
+      }
       statusBar.showNormal();
     } catch (error) {
       window.showErrorMessage(formatFailureMessage(error));
