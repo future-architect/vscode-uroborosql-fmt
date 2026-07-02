@@ -4,7 +4,6 @@ import {
   window,
   commands,
   StatusBarAlignment,
-  ThemeColor,
   StatusBarItem,
   ConfigurationTarget,
 } from "vscode";
@@ -88,32 +87,6 @@ export function activate(context: ExtensionContext) {
   // ステータスバーの作成と表示
   const statusBar = createStatusBar();
   statusBar.show();
-
-  client.onReady().then(() => {
-    // ステータスバーの背景色を黄色に変更
-    client.onRequest("custom/warning", () => {
-      statusBar.backgroundColor = new ThemeColor(
-        "statusBarItem.warningBackground",
-      );
-      statusBar.text = "$(warning) Uroborosql-fmt";
-    });
-
-    // ステータスバーの背景色を赤色に変更
-    client.onRequest("custom/error", () => {
-      statusBar.backgroundColor = new ThemeColor(
-        "statusBarItem.errorBackground",
-      );
-      statusBar.text = "$(alert) Uroborosql-fmt";
-    });
-
-    // ステータスバーの背景色を通常色に変更
-    client.onRequest("custom/normal", () => {
-      statusBar.backgroundColor = new ThemeColor(
-        "statusBarItem.fourgroundBackground",
-      );
-      statusBar.text = "Uroborosql-fmt";
-    });
-  });
 
   // Start the client. This will also launch the server
   client.start();
