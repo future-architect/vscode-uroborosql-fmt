@@ -27,22 +27,20 @@ suite("Formatting status middleware", () => {
     assert.deepStrictEqual(calls, []);
   });
 
-  test("marks status as error when formatting throws", async () => {
+  test("marks status as error and suppresses formatting errors", async () => {
     const calls: string[] = [];
 
-    await assert.rejects(
-      withFormattingStatus(
-        async () => {
-          throw new Error("format failed");
-        },
-        {
-          showNormal: () => calls.push("normal"),
-          showError: () => calls.push("error"),
-        },
-      ),
-      /format failed/,
+    const result = await withFormattingStatus(
+      async () => {
+        throw new Error("format failed");
+      },
+      {
+        showNormal: () => calls.push("normal"),
+        showError: () => calls.push("error"),
+      },
     );
 
+    assert.strictEqual(result, undefined);
     assert.deepStrictEqual(calls, ["error"]);
   });
 

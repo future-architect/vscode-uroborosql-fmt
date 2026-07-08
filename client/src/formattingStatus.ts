@@ -20,6 +20,6 @@ export async function withFormattingStatus<T>(
       throw error;
     }
     status.showError();
-    throw error;
+    return undefined;
   }
 }
