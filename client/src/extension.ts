@@ -1,16 +1,10 @@
 import * as path from "path";
-import {
-  ExtensionContext,
-  window,
-  commands,
-  StatusBarAlignment,
-  StatusBarItem,
-  ConfigurationTarget,
-} from "vscode";
+import { ExtensionContext, commands, ConfigurationTarget } from "vscode";
 
 import {
   LanguageClient,
   LanguageClientOptions,
+  RevealOutputChannelOn,
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
@@ -21,11 +15,18 @@ import {
   buildFormatSqlCommand,
   buildFormatSelectionsAsSqlCommand,
 } from "./command";
+import { withFormattingStatus } from "./formattingStatus";
+import { createStatusBarController, type StatusBarState } from "./status";
 
 let client: LanguageClient;
 
+type ExtensionApi = {
+  onReady(): Promise<void>;
+  getStatusState(): StatusBarState;
+};
+
 //拡張機能を立ち上げたときに呼び出す関数
-export function activate(context: ExtensionContext) {
+export function activate(context: ExtensionContext): ExtensionApi {
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
     path.join("server", "out", "server.js"),
@@ -36,11 +37,31 @@ export function activate(context: ExtensionContext) {
     debug: { module: serverModule, transport: TransportKind.stdio },
   };
 
+  const statusBar = createStatusBarController(() => {
+    client.outputChannel.show();
+  });
+
   const clientOptions: LanguageClientOptions = {
     // 拡張がサーバへ渡すのは SQL 文書のみに限定する。
     documentSelector: [{ scheme: "file", language: "sql" }],
     synchronize: {
       configurationSection: "uroborosql-fmt",
+    },
+    revealOutputChannelOn: RevealOutputChannelOn.Never,
+    middleware: {
+      provideDocumentFormattingEdits: async (document, options, token, next) =>
+        withFormattingStatus(() => next(document, options, token), statusBar),
+      provideDocumentRangeFormattingEdits: async (
+        document,
+        range,
+        options,
+        token,
+        next,
+      ) =>
+        withFormattingStatus(
+          () => next(document, range, options, token),
+          statusBar,
+        ),
     },
   };
 
@@ -55,14 +76,21 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.uroborosql-format",
-      buildFormatSqlCommand(client),
+      buildFormatSqlCommand(client, statusBar),
     ),
   );
 
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.format-selection-as-sql",
-      buildFormatSelectionsAsSqlCommand(client),
+      buildFormatSelectionsAsSqlCommand(client, statusBar),
+    ),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.show-output",
+      statusBar.showOutput,
     ),
   );
 
@@ -84,28 +112,15 @@ export function activate(context: ExtensionContext) {
     ),
   );
 
-  // ステータスバーの作成と表示
-  const statusBar = createStatusBar();
-  statusBar.show();
+  context.subscriptions.push(statusBar);
 
   // Start the client. This will also launch the server
   client.start();
 
-  return { onReady: () => client.onReady() };
-}
-
-function createStatusBar(): StatusBarItem {
-  commands.registerCommand("uroborosql-fmt.show-output", async () => {
-    const output_channnel = client.outputChannel;
-    output_channnel.show();
-  });
-
-  const statusBar = window.createStatusBarItem(StatusBarAlignment.Right, 100);
-  statusBar.text = "Uroborosql-fmt";
-  statusBar.name = "Uroborosql-fmt";
-  statusBar.command = "uroborosql-fmt.show-output";
-
-  return statusBar;
+  return {
+    onReady: () => client.onReady(),
+    getStatusState: () => statusBar.getState(),
+  };
 }
 
 export function deactivate(): Thenable<void> | undefined {

@@ -7,6 +7,7 @@ import {
   getDocUri,
   replaceDocumentText,
   waitForDocumentTextChange,
+  waitForStatusState,
 } from "./helper";
 
 suite("Should format SQL via commands", () => {
@@ -57,9 +58,11 @@ suite("Should format SQL via commands", () => {
       wholeDocumentAsSqlUri,
       original,
     );
+    const status = await waitForStatusState("normal");
 
     assert.notStrictEqual(formatted, original);
     assert.match(formatted, formattedEmbeddedSql);
+    assert.strictEqual(status, "normal");
   });
 
   test("Rejects overlapping selections before sending the request", async () => {
@@ -114,8 +117,10 @@ suite("Should format SQL via commands", () => {
     const latestDocument = await vscode.workspace.openTextDocument(
       invalidEmbeddedDocUri,
     );
+    const status = await waitForStatusState("error");
     assert.strictEqual(latestDocument.getText(), original);
     assert.strictEqual(messages.length, 1);
     assert.match(messages[0], /^Format failed: /);
+    assert.strictEqual(status, "error");
   });
 });

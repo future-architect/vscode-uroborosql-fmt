@@ -15,6 +15,7 @@ import {
   WorkspaceEdit,
 } from "vscode";
 import type { LanguageClient } from "vscode-languageclient/node";
+import type { StatusBarController } from "./status";
 
 const FORMAT_SELECTIONS_AS_SQL_METHOD = "uroborosql/formatSelectionsAsSql";
 const EMPTY_SELECTION_MESSAGE = "Select text to format as SQL.";
@@ -341,7 +342,11 @@ const hasOverlappingSelections = (
 };
 
 const buildFormatAsSqlCommand =
-  (client: LanguageClient, options: FormatAsSqlCommandOptions) =>
+  (
+    client: LanguageClient,
+    statusBar: Pick<StatusBarController, "showNormal" | "showError">,
+    options: FormatAsSqlCommandOptions,
+  ) =>
   async (): Promise<void> => {
     const editor = window.activeTextEditor;
     if (!editor) {
@@ -406,18 +411,32 @@ const buildFormatAsSqlCommand =
         );
       }
 
-      await workspace.applyEdit(edit);
+      // applyEdit は文書がリクエスト後に変化した場合などに false を返すため、
+      // version mismatch と同じ「サーバ失敗ではない適用中断」として扱い status は変えない
+      const applied = await workspace.applyEdit(edit);
+      if (!applied) {
+        window.showErrorMessage(VERSION_MISMATCH_MESSAGE);
+        return;
+      }
+      statusBar.showNormal();
     } catch (error) {
       window.showErrorMessage(formatFailureMessage(error));
+      statusBar.showError();
     }
   };
 
-export const buildFormatSelectionsAsSqlCommand = (client: LanguageClient) =>
-  buildFormatAsSqlCommand(client, {
+export const buildFormatSelectionsAsSqlCommand = (
+  client: LanguageClient,
+  statusBar: Pick<StatusBarController, "showNormal" | "showError">,
+) =>
+  buildFormatAsSqlCommand(client, statusBar, {
     formatWholeDocumentWhenNoSelection: false,
   });
 
-export const buildFormatSqlCommand = (client: LanguageClient) =>
-  buildFormatAsSqlCommand(client, {
+export const buildFormatSqlCommand = (
+  client: LanguageClient,
+  statusBar: Pick<StatusBarController, "showNormal" | "showError">,
+) =>
+  buildFormatAsSqlCommand(client, statusBar, {
     formatWholeDocumentWhenNoSelection: true,
   });
