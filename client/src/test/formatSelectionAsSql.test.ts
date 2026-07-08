@@ -45,6 +45,34 @@ suite("Should format SQL via commands", () => {
     assert.match(formatted, /const sql = `select/);
   });
 
+  test("Formats non-empty selections even when empty selections are also present", async () => {
+    const document = await activateAndOpen(embeddedDocUri);
+    await replaceDocumentText(
+      document,
+      `export const sql = \`${embeddedSql}\`;\n`,
+    );
+    const original = document.getText();
+    const start = document.getText().indexOf(embeddedSql);
+    assert.notStrictEqual(start, -1);
+    const end = start + embeddedSql.length;
+    vscode.window.activeTextEditor!.selections = [
+      new vscode.Selection(document.positionAt(0), document.positionAt(0)),
+      new vscode.Selection(
+        document.positionAt(start),
+        document.positionAt(end),
+      ),
+    ];
+
+    await vscode.commands.executeCommand(
+      "uroborosql-fmt.format-selection-as-sql",
+    );
+    const formatted = await waitForDocumentTextChange(embeddedDocUri, original);
+
+    assert.notStrictEqual(formatted, original);
+    assert.match(formatted, formattedEmbeddedSql);
+    assert.match(formatted, /const sql = `select/);
+  });
+
   test("Formats a non-SQL document as a whole document through Format SQL", async () => {
     const document = await activateAndOpen(wholeDocumentAsSqlUri);
     await replaceDocumentText(document, "select distinct id from users\n");

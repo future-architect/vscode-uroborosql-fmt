@@ -356,8 +356,7 @@ const buildFormatAsSqlCommand =
     const { document, selections } = editor;
     if (
       !options.formatWholeDocumentWhenNoSelection &&
-      (selections.length === 0 ||
-        selections.some((selection) => selection.isEmpty))
+      selections.length === 0
     ) {
       window.showErrorMessage(EMPTY_SELECTION_MESSAGE);
       return;
