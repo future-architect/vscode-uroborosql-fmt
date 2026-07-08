@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 
 // uroborosql-fmt-napi のバージョン
 // update-napi-version.yml ワークフローによって自動更新される
-const NAPI_VERSION = "1.1.0";
+const NAPI_VERSION = "1.1.1";
 
 const releaseTag = `uroborosql-fmt-napi-v${NAPI_VERSION}`;
 const tgzName = `uroborosql-fmt-napi-${NAPI_VERSION}.tgz`;
