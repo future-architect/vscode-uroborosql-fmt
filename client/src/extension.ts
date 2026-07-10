@@ -1,61 +1,67 @@
 import * as path from "path";
-import {
-  workspace,
-  ExtensionContext,
-  window,
-  commands,
-  StatusBarAlignment,
-  ThemeColor,
-  StatusBarItem,
-  ConfigurationTarget,
-} from "vscode";
+import { ExtensionContext, commands, ConfigurationTarget } from "vscode";
 
 import {
   LanguageClient,
   LanguageClientOptions,
+  RevealOutputChannelOn,
   ServerOptions,
   TransportKind,
 } from "vscode-languageclient/node";
 
 import {
-  buildFormatFunction,
   exportSettings,
   buildImportSettingsFunction,
+  buildFormatSqlCommand,
+  buildFormatSelectionsAsSqlCommand,
 } from "./command";
+import { withFormattingStatus } from "./formattingStatus";
+import { createStatusBarController, type StatusBarState } from "./status";
 
 let client: LanguageClient;
 
+type ExtensionApi = {
+  onReady(): Promise<void>;
+  getStatusState(): StatusBarState;
+};
+
 //拡張機能を立ち上げたときに呼び出す関数
-export function activate(context: ExtensionContext) {
+export function activate(context: ExtensionContext): ExtensionApi {
   // The server is implemented in node
   const serverModule = context.asAbsolutePath(
     path.join("server", "out", "server.js"),
   );
-  // The debug options for the server
-  // --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-  const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
-
-  // If the extension is launched in debug mode then the debug server options are used
-  // Otherwise the run options are used
+  // Rust 製 language server は stdio へバインドされるため stdio transport で接続する。
   const serverOptions: ServerOptions = {
-    run: { module: serverModule, transport: TransportKind.ipc },
-    debug: {
-      module: serverModule,
-      transport: TransportKind.ipc,
-      options: debugOptions,
-    },
+    run: { module: serverModule, transport: TransportKind.stdio },
+    debug: { module: serverModule, transport: TransportKind.stdio },
   };
 
-  // 対象とする言語。今回はplaintext
+  const statusBar = createStatusBarController(() => {
+    client.outputChannel.show();
+  });
+
   const clientOptions: LanguageClientOptions = {
-    // Register the server for plain text documents
-    documentSelector: [
-      { pattern: "**", scheme: "file" },
-      { pattern: "**", scheme: "untitled" },
-    ],
+    // 拡張がサーバへ渡すのは SQL 文書のみに限定する。
+    documentSelector: [{ scheme: "file", language: "sql" }],
     synchronize: {
-      // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher("**/.clientrc"),
+      configurationSection: "uroborosql-fmt",
+    },
+    revealOutputChannelOn: RevealOutputChannelOn.Never,
+    middleware: {
+      provideDocumentFormattingEdits: async (document, options, token, next) =>
+        withFormattingStatus(() => next(document, options, token), statusBar),
+      provideDocumentRangeFormattingEdits: async (
+        document,
+        range,
+        options,
+        token,
+        next,
+      ) =>
+        withFormattingStatus(
+          () => next(document, range, options, token),
+          statusBar,
+        ),
     },
   };
 
@@ -70,7 +76,21 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.uroborosql-format",
-      buildFormatFunction(client),
+      buildFormatSqlCommand(client, statusBar),
+    ),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.format-selection-as-sql",
+      buildFormatSelectionsAsSqlCommand(client, statusBar),
+    ),
+  );
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      "uroborosql-fmt.show-output",
+      statusBar.showOutput,
     ),
   );
 
@@ -92,54 +112,15 @@ export function activate(context: ExtensionContext) {
     ),
   );
 
-  // ステータスバーの作成と表示
-  const statusBar = createStatusBar();
-  statusBar.show();
-
-  client.onReady().then(() => {
-    // ステータスバーの背景色を黄色に変更
-    client.onRequest("custom/warning", () => {
-      statusBar.backgroundColor = new ThemeColor(
-        "statusBarItem.warningBackground",
-      );
-      statusBar.text = "$(warning) Uroborosql-fmt";
-    });
-
-    // ステータスバーの背景色を赤色に変更
-    client.onRequest("custom/error", () => {
-      statusBar.backgroundColor = new ThemeColor(
-        "statusBarItem.errorBackground",
-      );
-      statusBar.text = "$(alert) Uroborosql-fmt";
-    });
-
-    // ステータスバーの背景色を通常色に変更
-    client.onRequest("custom/normal", () => {
-      statusBar.backgroundColor = new ThemeColor(
-        "statusBarItem.fourgroundBackground",
-      );
-      statusBar.text = "Uroborosql-fmt";
-    });
-  });
+  context.subscriptions.push(statusBar);
 
   // Start the client. This will also launch the server
   client.start();
 
-  return { onReady: () => client.onReady() };
-}
-
-function createStatusBar(): StatusBarItem {
-  commands.registerCommand("uroborosql-fmt.show-output", async () => {
-    const output_channnel = client.outputChannel;
-    output_channnel.show();
-  });
-
-  const statusBar = window.createStatusBarItem(StatusBarAlignment.Right, 100);
-  statusBar.text = "Uroborosql-fmt";
-  statusBar.name = "Uroborosql-fmt";
-  statusBar.command = "uroborosql-fmt.show-output";
-
-  return statusBar;
+  return {
+    onReady: () => client.onReady(),
+    getStatusState: () => statusBar.getState(),
+  };
 }
 
 export function deactivate(): Thenable<void> | undefined {
