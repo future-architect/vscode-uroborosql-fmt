@@ -35,7 +35,7 @@ jobs:
         # v1.5.0 以降、custom release スクリプトを使っているケースでローカル tag が作成されなくなった
         # 当座の回避策として v1.4.10 に固定する
         # ref: https://github.com/changesets/action/issues/465
-        uses: changesets/action@v1.9.0
+        uses: changesets/action@06245a4e0a36c064a573d4150030f5ec548e4fcc # v1.4.10
         with:
           publish: npm run dummy-release
         env:
