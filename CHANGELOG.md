@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.1.0
+
+### Minor Changes
+
+- eb87faf: Migrate the VS Code language server backend from TypeScript to Rust
+
+  - Add lint diagnostics and quick fixes through `uroborosql-language-server`
+  - Add `Format Selection as SQL` for formatting embedded SQL in non-SQL files
+  - Raise the minimum supported VS Code version to 1.74.0 and replace `activationEvents: ["*"]` with `onLanguage:sql`
+
+- 86e801a: Update uroborosql-fmt
+
+  - Add linter feature and language server
+
 ## 2.0.1
 
 ### Patch Changes
