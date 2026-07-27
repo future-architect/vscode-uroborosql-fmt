@@ -344,6 +344,7 @@ const hasOverlappingSelections = (
 const buildFormatAsSqlCommand =
   (
     client: LanguageClient,
+    readyPromise: Promise<void>,
     statusBar: Pick<StatusBarController, "showNormal" | "showError">,
     options: FormatAsSqlCommandOptions,
   ) =>
@@ -387,7 +388,7 @@ const buildFormatAsSqlCommand =
     };
 
     try {
-      await client.onReady();
+      await readyPromise;
       const result = await client.sendRequest<FormatSelectionAsSqlResponse>(
         FORMAT_SELECTIONS_AS_SQL_METHOD,
         params,
@@ -426,16 +427,18 @@ const buildFormatAsSqlCommand =
 
 export const buildFormatSelectionsAsSqlCommand = (
   client: LanguageClient,
+  readyPromise: Promise<void>,
   statusBar: Pick<StatusBarController, "showNormal" | "showError">,
 ) =>
-  buildFormatAsSqlCommand(client, statusBar, {
+  buildFormatAsSqlCommand(client, readyPromise, statusBar, {
     formatWholeDocumentWhenNoSelection: false,
   });
 
 export const buildFormatSqlCommand = (
   client: LanguageClient,
+  readyPromise: Promise<void>,
   statusBar: Pick<StatusBarController, "showNormal" | "showError">,
 ) =>
-  buildFormatAsSqlCommand(client, statusBar, {
+  buildFormatAsSqlCommand(client, readyPromise, statusBar, {
     formatWholeDocumentWhenNoSelection: true,
   });
