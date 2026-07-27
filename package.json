@@ -268,8 +268,9 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && node esbuild.mjs --production",
     "compile": "tsc -b",
+    "bundle": "node esbuild.mjs",
     "watch": "tsc -b -w",
     "lint": "npm run eslint && npm run format:check",
     "lint:fix": "npm run eslint:fix && npm run format",
@@ -285,9 +286,6 @@
     "package:vsix": "vsce package",
     "publish:vsix": "vsce publish"
   },
-  "dependencies": {
-    "ts-case-convert": "^2.0.7"
-  },
   "devDependencies": {
     "@changesets/changelog-github": "^0.7.0",
     "@changesets/cli": "^2.26.2",
@@ -296,9 +294,11 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.28.1",
     "eslint": "^8.50.0",
     "mocha": "^11.0.0",
     "prettier": "~3.9.0",
+    "ts-case-convert": "^2.0.7",
     "typescript": "^5.2.2"
   }
 }
