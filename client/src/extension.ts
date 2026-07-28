@@ -73,17 +73,28 @@ export function activate(context: ExtensionContext): ExtensionApi {
     clientOptions,
   );
 
+  // Start the client. This will also launch the server.
+  const readyPromise = client.start();
+  // Consumers await this promise on their own timing (or never do, if the
+  // format commands are never invoked); attach a no-op catch here so a
+  // startup failure doesn't surface as an unhandled rejection.
+  readyPromise.catch((error) => {
+    client.outputChannel.appendLine(
+      `Failed to start language client: ${error}`,
+    );
+  });
+
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.uroborosql-format",
-      buildFormatSqlCommand(client, statusBar),
+      buildFormatSqlCommand(client, readyPromise, statusBar),
     ),
   );
 
   context.subscriptions.push(
     commands.registerCommand(
       "uroborosql-fmt.format-selection-as-sql",
-      buildFormatSelectionsAsSqlCommand(client, statusBar),
+      buildFormatSelectionsAsSqlCommand(client, readyPromise, statusBar),
     ),
   );
 
@@ -114,11 +125,8 @@ export function activate(context: ExtensionContext): ExtensionApi {
 
   context.subscriptions.push(statusBar);
 
-  // Start the client. This will also launch the server
-  client.start();
-
   return {
-    onReady: () => client.onReady(),
+    onReady: () => readyPromise,
     getStatusState: () => statusBar.getState(),
   };
 }

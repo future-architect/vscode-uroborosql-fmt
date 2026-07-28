@@ -1,6 +1,6 @@
 import { readdir } from "fs/promises";
 import * as path from "path";
-import * as Mocha from "mocha";
+import Mocha = require("mocha");
 
 export const collectTestFiles = async (root: string): Promise<string[]> => {
   const entries = await readdir(root, { withFileTypes: true });
