@@ -27,6 +27,15 @@
     "onLanguage:sql"
   ],
   "main": "./client/out/extension",
+  "files": [
+    "client/out/extension.js",
+    "server/out/server.js",
+    "server/node_modules/uroborosql-fmt-napi/**",
+    "images/**",
+    "uroborosql-fmt-icon.png",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "contributes": {
     "commands": [
       {

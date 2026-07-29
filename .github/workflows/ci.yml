@@ -29,8 +29,8 @@ jobs:
           cache: npm
       - name: Install Packages
         run: npm ci
-      - name: Build
-        run: npm run compile
+      - name: Package VSIX
+        run: npm run package:vsix
   e2e:
     runs-on: ubuntu-latest
     steps:
