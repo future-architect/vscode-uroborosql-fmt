@@ -281,7 +281,9 @@
     "test": "sh ./scripts/e2e.sh",
     "test:multiroot": "sh ./scripts/e2e-multiroot.sh",
     "download-uroborosql-fmt-napi": "node ./server/download-uroborosql-fmt-napi.mjs",
-    "dummy-release": "node ./scripts/dummy-publish.mjs"
+    "dummy-release": "node ./scripts/dummy-publish.mjs",
+    "package:vsix": "vsce package",
+    "publish:vsix": "vsce publish"
   },
   "dependencies": {
     "ts-case-convert": "^2.0.7"
@@ -293,6 +295,7 @@
     "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/vsce": "^3.9.2",
     "eslint": "^8.50.0",
     "mocha": "^11.0.0",
     "prettier": "~3.9.0",
