@@ -89,7 +89,7 @@ jobs:
         # pull_request トリガーの workflow が自動実行されない。
         # バージョン更新のみの PR のため手動確認・手動マージ前提で許容している。
         # 自動実行したい場合は PAT など別トークンの利用を検討する。
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        uses: peter-evans/create-pull-request@15733dbdfeedb4f7fdb73d13c6f5ac83b710fab8 # v8.1.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "chore: update uroborosql-fmt-napi to ${{ steps.latest.outputs.version }}"
