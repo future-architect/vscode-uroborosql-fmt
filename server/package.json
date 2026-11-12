@@ -6,7 +6,7 @@
   "publisher": "Future",
   "license": "BUSL-1.1",
   "engines": {
-    "node": ">=24.14.0 <25"
+    "node": "<27"
   },
   "repository": {},
   "dependencies": {
