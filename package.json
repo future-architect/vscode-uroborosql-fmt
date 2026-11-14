@@ -286,7 +286,7 @@
     "publish:vsix": "vsce publish"
   },
   "dependencies": {
-    "ts-case-convert": "^2.0.7"
+    "ts-case-convert": "^3.0.0"
   },
   "devDependencies": {
     "@changesets/changelog-github": "^1.0.0",
